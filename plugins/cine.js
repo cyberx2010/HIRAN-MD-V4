@@ -8,7 +8,7 @@ module.exports = {
   async function(conn, mek, m, { q, reply }) {
     if (!q) return reply('Please provide a movie name to search.');
 
-    const API_KEY = process.env.INFINITY_API_KEY || 'YOUR_API_KEY_HERE';
+    const API_KEY = process.env.INFINITY_API_KEY || 'SW5maW5pdHktRkEyNDBGLTI4NENFLUZDMDAtODc1QTc=';
 
     try {
       // 1. Search movies
