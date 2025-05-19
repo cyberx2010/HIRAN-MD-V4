@@ -1,12 +1,12 @@
 {
-  "name": "yout bot name",
+  "name": "CyberX",
   "version": "1.0.0",
   "description": "A WhatsApp bot created using Node.js",
   "main": "index.js",
   "scripts": {
     "start": "pm2 start index.js --deep-monitoring --attach --name Your Bot Name",
-    "stop": "pm2 stop Your Bot name",
-    "restart": "pm2 restart Your Bot name"
+    "stop": "pm2 stop CyberX",
+    "restart": "pm2 restart CyberX"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "6.6.0",
