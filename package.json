@@ -12,7 +12,7 @@
     "@whiskeysockets/baileys": "github:AxellNetwork/Baileys",
     "@adiwajshing/keyed-db": "^0.2.4",
     "denethdev-ytmp3": "1.0.3",
-    "@dark-yasiya/scraper": "^1.0.1",
+    "@dark-yasiya/scraper": "github:Dark-Yasiya/SCRAP",
     "google-tts-api": "^2.0.2",
     "pino": "^7.0.5",
     "pm2": "^6.0.6",
