@@ -2,28 +2,24 @@ const { cmd } = require('../command');
 const yts = require('yt-search');
 const ddownr = require('denethdev-ytmp3');
 
+// Updated waitForReply without timeout and with better quoted reply detection
 const waitForReply = async (messageHandler, from, sentMsgId, isGroup) => {
   return new Promise((resolve) => {
     const handler = async (update) => {
       const msg = update.messages?.[0];
       if (!msg || msg.key.fromMe) return;
 
-      const text = msg.message?.extendedTextMessage?.text?.trim();
-      const stanzaId = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+      const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+      const quotedId = msg.message?.extendedTextMessage?.contextInfo?.stanzaId ||
+                       msg.message?.contextInfo?.stanzaId;
 
-      if (text && stanzaId === sentMsgId) {
+      if (text && quotedId === sentMsgId) {
         messageHandler.ev.off('messages.upsert', handler);
-        resolve(text);
+        resolve(text.trim());
       }
     };
 
     messageHandler.ev.on('messages.upsert', handler);
-
-    // timeout after 60 seconds
-    setTimeout(() => {
-      messageHandler.ev.off('messages.upsert', handler);
-      resolve(null);
-    }, 60000);
   });
 };
 
@@ -57,7 +53,7 @@ cmd({
     }, { quoted: qmsg });
 
     const response = await waitForReply(m, from, sent.key.id, from.endsWith('@g.us'));
-    if (!response) return reply("*⏱️ Timeout. Please try again.*");
+    if (!response) return; // No timeout message now
 
     let dl;
     try {
@@ -121,7 +117,7 @@ cmd({
     }, { quoted: qmsg });
 
     const response = await waitForReply(m, from, sent.key.id, from.endsWith('@g.us'));
-    if (!response) return reply("*⏱️ Timeout. Please try again.*");
+    if (!response) return; // No timeout message now
 
     let dl;
     try {
