@@ -13,7 +13,7 @@ function isLangSinhalaOrTamil(text) {
 cmd({
   pattern: "song",
   desc: "Download YouTube songs with quality selection.",
-  react: "🎵",
+  react: "ðŸŽµ",
   category: "download",
   filename: __filename
 }, async (conn, mek, m, { from, q, reply, pushname }) => {
@@ -57,9 +57,9 @@ cmd({
     const results = search.videos.slice(0, 5)
     if (results.length === 0) return reply("No results found.")
 
-    let list = "*🎵 Choose a song:*
+    let list = `*ðŸŽµ Choose a song:*
 
-"
+`
     results.forEach((v, i) => {
       list += `${i + 1}. ${v.title} [${v.timestamp}]
 `
@@ -78,7 +78,7 @@ _Reply with a number (1-${results.length})_`
 cmd({
   pattern: "video",
   desc: "Download YouTube videos with quality selection.",
-  react: "🎥",
+  react: "ðŸŽ¥",
   category: "download",
   filename: __filename
 }, async (conn, mek, m, { from, q, reply, pushname }) => {
@@ -108,7 +108,7 @@ cmd({
       const download = await ytv(url)
       const fileName = selected.title + ".mp4"
 
-      if (num === 1 || num === 2 || num === 3) {
+      if (num >= 1 && num <= 3) {
         await conn.sendMessage(from, { video: { url: download.dl_url }, mimetype: "video/mp4" }, { quoted: mek })
       } else if (num === 4) {
         await conn.sendMessage(from, { document: { url: download.dl_url }, mimetype: "video/mp4", fileName }, { quoted: mek })
@@ -124,9 +124,9 @@ cmd({
     const results = search.videos.slice(0, 5)
     if (results.length === 0) return reply("No results found.")
 
-    let list = "*🎥 Choose a video:*
+    let list = `*ðŸŽ¥ Choose a video:*
 
-"
+`
     results.forEach((v, i) => {
       list += `${i + 1}. ${v.title} [${v.timestamp}]
 `
