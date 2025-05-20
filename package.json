@@ -1,17 +1,18 @@
 {
-  "name": "CyberX",
-  "version": "1.0.0",
+  "name": "HiranMD",
+  "version": "4.0.1",
   "description": "A WhatsApp bot created using Node.js",
   "main": "index.js",
   "scripts": {
-    "start": "pm2 start index.js --deep-monitoring --attach --name CyberX",
-    "stop": "pm2 stop CyberX",
-    "restart": "pm2 restart CyberX"
+    "start": "pm2 start index.js --deep-monitoring --attach --name HiranMD",
+    "stop": "pm2 stop HiranMD",
+    "restart": "pm2 restart HiranMD"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "github:AxellNetwork/Baileys",
     "@adiwajshing/keyed-db": "^0.2.4",
     "denethdev-ytmp3": "1.0.3",
+    "@dark-yasiya/scraper": "^1.0.3",
     "google-tts-api": "^2.0.2",
     "pino": "^7.0.5",
     "pm2": "^6.0.6",
