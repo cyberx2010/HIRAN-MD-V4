@@ -1,161 +1,156 @@
-const { cmd, commands } = require('../command');
+const { cmd } = require('../command');
 const yts = require('yt-search');
-const ddownr = require('denethdev-ytmp3'); // Importing the denethdev-ytmp3 package for downloading
+const ddownr = require('denethdev-ytmp3');
 
+const waitForReply = async (messageHandler, from, sentMsgId, isGroup) => {
+  return new Promise((resolve) => {
+    const handler = async (update) => {
+      const msg = update.messages?.[0];
+      if (!msg || msg.key.fromMe) return;
+
+      const text = msg.message?.extendedTextMessage?.text?.trim();
+      const stanzaId = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+
+      if (text && stanzaId === sentMsgId) {
+        messageHandler.ev.off('messages.upsert', handler);
+        resolve(text);
+      }
+    };
+
+    messageHandler.ev.on('messages.upsert', handler);
+
+    // timeout after 60 seconds
+    setTimeout(() => {
+      messageHandler.ev.off('messages.upsert', handler);
+      resolve(null);
+    }, 60000);
+  });
+};
+
+// ================= SONG =================
 cmd({
   pattern: "song",
-  desc: "Download songs.",
+  desc: "Download YouTube songs",
   category: "download",
   react: '🎧',
   filename: __filename
-}, async (messageHandler, context, quotedMessage, { from, reply, q }) => {
+}, async (m, c, qmsg, { from, reply, q }) => {
+  if (!q) return reply("*Please provide a song name or URL.*");
+
   try {
-    if (!q) return reply("*Please Provide A Song Name or Url 🙄*");
-    
-    // Search for the song using yt-search
-    const searchResults = await yts(q);
-    if (!searchResults || searchResults.videos.length === 0) {
-      return reply("*No Song Found Matching Your Query 🧐*");
+    const search = await yts(q);
+    const result = search.videos?.[0];
+    if (!result) return reply("*No results found.*");
+
+    let caption = `*🍃 ＳＯＮＧ ＤＯＷＮＬＯＡＤＥＲ 🎶*\n\n`;
+    caption += `*☘️ Title:* ${result.title}\n`;
+    caption += `*➥ Views:* ${result.views}\n`;
+    caption += `*➥ Duration:* ${result.timestamp}\n`;
+    caption += `*➥ Uploaded:* ${result.ago}\n`;
+    caption += `*➥ Channel:* ${result.author.name}\n`;
+    caption += `*➥ URL:* ${result.url}\n\n`;
+    caption += `*Choose Format:*\n1 || Audio 🎶\n2 || Document 📂\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
+
+    const sent = await m.sendMessage(from, {
+      image: { url: result.thumbnail },
+      caption
+    }, { quoted: qmsg });
+
+    const response = await waitForReply(m, from, sent.key.id, from.endsWith('@g.us'));
+    if (!response) return reply("*⏱️ Timeout. Please try again.*");
+
+    let dl;
+    try {
+      dl = await ddownr.download(result.url, 'mp3');
+    } catch {
+      return reply("*❌ Failed to download this song. Format may be blocked.*");
     }
 
-    const songData = searchResults.videos[0];
-    const songUrl = songData.url;
+    if (!dl?.downloadUrl) return reply("*❌ No download link available.*");
 
-    // Using denethdev-ytmp3 to fetch the download link
-    const result = await ddownr.download(songUrl, 'mp3'); // Download in mp3 format
-    const downloadLink = result.downloadUrl; // Get the download URL
+    if (response === '1') {
+      await m.sendMessage(from, {
+        audio: { url: dl.downloadUrl },
+        mimetype: 'audio/mpeg'
+      }, { quoted: qmsg });
+    } else if (response === '2') {
+      await m.sendMessage(from, {
+        document: { url: dl.downloadUrl },
+        mimetype: 'audio/mpeg',
+        fileName: `${result.title}.mp3`,
+        caption: `ʜɪʀᴀɴᴍᴅ ꜱᴏɴɢ\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
+      }, { quoted: qmsg });
+    } else {
+      reply("*Invalid option. Use 1 or 2 only.*");
+    }
 
-    let songDetailsMessage = `*🍃 ＳＯＮＧ ＤＯＷＮＬＯＡＤＥＲ 🎶*\n\n`;
-    songDetailsMessage += `*☘️ Title:* ${songData.title}\n`;
-    songDetailsMessage += `*➥ Views:* ${songData.views}\n`;
-    songDetailsMessage += `*➥ Duration:* ${songData.timestamp}\n`;
-    songDetailsMessage += `*➥ Uploaded:* ${songData.ago}\n`;
-    songDetailsMessage += `*➥ Channel:* ${songData.author.name}\n`;
-    songDetailsMessage += `*➥ URL:* ${songData.url}\n\n`;
-    songDetailsMessage += `*Choose Your Download Format:*\n\n`;
-    songDetailsMessage += `1 || Audio File 🎶\n`;
-    songDetailsMessage += `2 || Document File 📂\n\n`;
-    songDetailsMessage += `> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
-
-    // Send the video thumbnail with song details
-    const sentMessage = await messageHandler.sendMessage(from, {
-      image: { url: songData.thumbnail },
-      caption: songDetailsMessage,
-    }, { quoted: quotedMessage });
-
-    // Listen for the user's reply to select the download format
-    messageHandler.ev.on("messages.upsert", async (update) => {
-      const message = update.messages[0];
-      if (!message.message || !message.message.extendedTextMessage) return;
-
-      const userReply = message.message.extendedTextMessage.text.trim();
-
-      // Handle the download format choice
-      if (message.message.extendedTextMessage.contextInfo.stanzaId === sentMessage.key.id) {
-        switch (userReply) {
-          case '1': // Audio File
-            await messageHandler.sendMessage(from, {
-              audio: { url: downloadLink },
-              mimetype: "audio/mpeg"
-            }, { quoted: quotedMessage });
-            break;
-          case '2': // Document File
-            await messageHandler.sendMessage(from, {
-              document: { url: downloadLink },
-              mimetype: 'audio/mpeg',
-              fileName: `${songData.title}.mp3`,
-              caption: `ʜɪʀᴀɴᴍᴅ ꜱᴏɴɢ ${songData.title}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
-            }, { quoted: quotedMessage });
-            break;
-          default:
-            reply("*Invalid Option. Please Select A Valid Option 🙄*");
-            break;
-        }
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    reply("*An Error Occurred While Processing Your Request 😔*");
+  } catch (err) {
+    console.error(err);
+    reply("*An error occurred while processing your song.*");
   }
 });
 
-///=======================VIDEO DL==================///
 
+// ================= VIDEO =================
 cmd({
   pattern: "video",
-  desc: "Download YouTube videos.",
+  desc: "Download YouTube videos",
   category: "download",
   react: '🎥',
   filename: __filename
-}, async (messageHandler, context, quotedMessage, { from, reply, q }) => {
-  try {
-    if (!q) return reply("*Please Provide A Video Name Or URL 🙄*");
+}, async (m, c, qmsg, { from, reply, q }) => {
+  if (!q) return reply("*Please provide a video name or URL.*");
 
-    // Search YouTube
-    const searchResults = await yts(q);
-    if (!searchResults || searchResults.videos.length === 0) {
-      return reply("*No Video Found Matching Your Query 🧐*");
+  try {
+    const search = await yts(q);
+    const result = search.videos?.[0];
+    if (!result) return reply("*No video results found.*");
+
+    let caption = `*🎥 ＶＩＤＥＯ ＤＯＷＮＬＯＡＤＥＲ 🎬*\n\n`;
+    caption += `*🌿 Title:* ${result.title}\n`;
+    caption += `*️➥ Views:* ${result.views}\n`;
+    caption += `*➥ Duration:* ${result.timestamp}\n`;
+    caption += `*➥ Uploaded:* ${result.ago}\n`;
+    caption += `*➥ Channel:* ${result.author.name}\n`;
+    caption += `*➥ URL:* ${result.url}\n\n`;
+    caption += `*Choose Format:*\n1 || Video 🎬\n2 || Document 📁\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
+
+    const sent = await m.sendMessage(from, {
+      image: { url: result.thumbnail },
+      caption
+    }, { quoted: qmsg });
+
+    const response = await waitForReply(m, from, sent.key.id, from.endsWith('@g.us'));
+    if (!response) return reply("*⏱️ Timeout. Please try again.*");
+
+    let dl;
+    try {
+      dl = await ddownr.download(result.url, 'mp4');
+    } catch {
+      return reply("*❌ Failed to download video. Format not supported.*");
     }
 
-    const videoData = searchResults.videos[0];
-    const videoUrl = videoData.url;
+    if (!dl?.downloadUrl) return reply("*❌ No download link available.*");
 
-    // Download video link using denethdev-ytmp3
-    const videoResult = await ddownr.download(videoUrl, 'mp4');
-    const videoDownloadLink = videoResult.downloadUrl;
+    if (response === '1') {
+      await m.sendMessage(from, {
+        video: { url: dl.downloadUrl },
+        mimetype: 'video/mp4',
+        caption: `🎬 ${result.title}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
+      }, { quoted: qmsg });
+    } else if (response === '2') {
+      await m.sendMessage(from, {
+        document: { url: dl.downloadUrl },
+        mimetype: 'video/mp4',
+        fileName: `${result.title}.mp4`,
+        caption: `🎬 ${result.title}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
+      }, { quoted: qmsg });
+    } else {
+      reply("*Invalid option. Use 1 or 2 only.*");
+    }
 
-    // Compose message with emojis and credits like your song plugin
-    let videoDetailsMessage = `*🎥 ＶＩＤＥＯ ＤＯＷＮＬＯＡＤＥＲ 🎬*\n\n`;
-    videoDetailsMessage += `*🌿 Title:* ${videoData.title}\n`;
-    videoDetailsMessage += `*️➥ Views:* ${videoData.views}\n`;
-    videoDetailsMessage += `*➥ Duration:* ${videoData.timestamp}\n`;
-    videoDetailsMessage += `*➥ Uploaded:* ${videoData.ago}\n`;
-    videoDetailsMessage += `*➥ Channel:* ${videoData.author.name}\n`;
-    videoDetailsMessage += `*➥ URL:* ${videoUrl}\n\n`;
-    videoDetailsMessage += `*Choose Your Download Format:*\n\n`;
-    videoDetailsMessage += `1 || Video File 🎬\n`;
-    videoDetailsMessage += `2 || Document File 📁\n\n`;
-    videoDetailsMessage += `> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
-
-    // Send thumbnail + details
-    const sentMessage = await messageHandler.sendMessage(from, {
-      image: { url: videoData.thumbnail },
-      caption: videoDetailsMessage,
-    }, { quoted: quotedMessage });
-
-    // Listen for user's reply to choose download format
-    messageHandler.ev.on("messages.upsert", async (update) => {
-      const message = update.messages[0];
-      if (!message.message || !message.message.extendedTextMessage) return;
-
-      const userReply = message.message.extendedTextMessage.text.trim();
-
-      // Only respond if reply is to this sent message
-      if (message.message.extendedTextMessage.contextInfo?.stanzaId === sentMessage.key.id) {
-        switch (userReply) {
-          case '1': // Video as video
-            await messageHandler.sendMessage(from, {
-              video: { url: videoDownloadLink },
-              mimetype: "video/mp4",
-              caption: `🎬 ${videoData.title}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
-            }, { quoted: quotedMessage });
-            break;
-          case '2': // Video as document
-            await messageHandler.sendMessage(from, {
-              document: { url: videoDownloadLink },
-              mimetype: "video/mp4",
-              fileName: `${videoData.title}.mp4`,
-              caption: `🎬 ${videoData.title}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
-            }, { quoted: quotedMessage });
-            break;
-          default:
-            reply("*Invalid Option. Please Select 1 or 2 🙄*");
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error(error);
-    reply("*An Error Occurred While Processing Your Request 😔*");
+  } catch (err) {
+    console.error(err);
+    reply("*An error occurred while processing your video.*");
   }
 });
