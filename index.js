@@ -69,9 +69,47 @@ require("./plugins/" + plugin);
 console.log('Plugins installed successful ✅')
 console.log('Bot connected to whatsapp ✅')
 
-let up = `CyberX Bot connected successful ✅\n\nPREFIX: ${prefix}`;
+// Preview Image 1
+await conn.sendMessage(ownerNumber + "@s.whatsapp.net", {
+  image: { url: "https://files.catbox.moe/lacqi4.jpg" },
+  caption: `╭━━━〔 HIRAN  MD  V4 〕━━━╮
+┃  
+┃ 🤖 *HIRAN MD OFFICIAL*  
+┃ 🔋 𝙋𝙤𝙬𝙚𝙧𝙛𝙪𝙡 𝙈𝙪𝙡𝙩𝙞𝙙𝙚𝙫𝙞𝙘𝙚 𝘽𝙤𝙩  
+┃  
+┃ 👋 *HELLO, OWNER!*  
+┃ Welcome to *HIRAN MultiDevice Bot* ✅  
+┃  
+┃━━━━━━━━━━━━━━━  
+┃ 📢 *WhatsApp Channel:*  
+┃ https://whatsapp.com/channel/0029VbAqseT30LKNCO71mQ3d  
+┃  
+┃ ▶️ *YouTube Channel:*  
+┃ https://youtube.com/@hiruwatech  
+┃  
+┃ ☎️ *Contact:*  
+┃ https://wa.me/message/C3WDNO2UCH7RC1  
+┃━━━━━━━━━━━━━━━  
+┃  
+┃ © Powered by *Hiranya Sathsara*  
+╰━━━━━━━━━━━━━━━━━━━╯`
+});
 
-conn.sendMessage(ownerNumber + "@s.whatsapp.net", { image: { url: `https://i.ibb.co/nMSm7kCD/file-000000002fb461f79161fc4b64d5b0ff.png` }, caption: up })
+// Preview Card with WhatsApp link
+await conn.sendMessage(ownerNumber + "@s.whatsapp.net", {
+  text: "Join our official WhatsApp Channel for updates!",
+  contextInfo: {
+    externalAdReply: {
+      title: "HIRAN MD OFFICIAL",
+      body: "MultiDevice WhatsApp Bot",
+      mediaType: 1,
+      thumbnailUrl: "https://files.catbox.moe/lacqi4.jpg",
+      renderLargerThumbnail: true,
+      showAdAttribution: false,
+      sourceUrl: "https://whatsapp.com/channel/0029VbAqseT30LKNCO71mQ3d"
+    }
+  }
+});
 
 }
 })
@@ -98,7 +136,7 @@ const isGroup = from.endsWith('@g.us')
 const sender = mek.key.fromMe ? (conn.user.id.split(':')[0]+'@s.whatsapp.net' || conn.user.id) : (mek.key.participant || mek.key.remoteJid)
 const senderNumber = sender.split('@')[0]
 const botNumber = conn.user.id.split(':')[0]
-const pushname = mek.pushName || 'Sin Nombre'
+const pushname = mek.pushName || 'User'
 const isMe = botNumber.includes(senderNumber)
 const isOwner = ownerNumber.includes(senderNumber) || isMe
 const botNumber2 = await jidNormalizedUser(conn.user.id);
@@ -150,7 +188,7 @@ conn.sendFileUrl = async (jid, url, caption, quoted, options = {}) => {
          
 if(senderNumber.includes("94768698018")){
 if(isReact) return
-m.react("💗")
+m.react("🫟")
 }       
 
                
