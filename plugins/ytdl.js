@@ -1,143 +1,80 @@
-
-const { cmd } = require('../command')
-const yts = require('yt-search')
-const { yta, ytv } = require('@dark-yasiya/scrap')
-const store = {}
-
-function isLangSinhalaOrTamil(text) {
-  const sinhala = /[\u0D80-\u0DFF]/.test(text)
-  const tamil = /[\u0B80-\u0BFF]/.test(text)
-  return sinhala || tamil
-}
+const { cmd, commands } = require('../command');
+const yts = require('yt-search');
+const ddownr = require('denethdev-ytmp3'); // Importing the denethdev-ytmp3 package for downloading
 
 cmd({
   pattern: "song",
-  desc: "Download YouTube songs with quality selection.",
-  react: "ðŸŽµ",
+  desc: "Download songs.",
   category: "download",
+  react: '🎧',
   filename: __filename
-}, async (conn, mek, m, { from, q, reply, pushname }) => {
+}, async (messageHandler, context, quotedMessage, { from, reply, q }) => {
   try {
-    if (!q) return reply("Please enter a title or URL")
-
-    const session = store[from]
-    const num = parseInt(q)
-
-    if (!isNaN(num) && session && session.step === 'select_result' && session.command === 'song') {
-      const selected = session.results[num - 1]
-      if (!selected) return reply("Invalid selection.")
-      store[from] = { step: 'select_quality', command: 'song', video: selected, from }
-
-      const buttons = `*Select audio format:*
-
-1. MP3 (128kbps)
-2. MP3 (Document)`
-      return reply(buttons)
+    if (!q) return reply("*Please Provide A Song Name or Url 🙄*");
+    
+    // Search for the song using yt-search
+    const searchResults = await yts(q);
+    if (!searchResults || searchResults.videos.length === 0) {
+      return reply("*No Song Found Matching Your Query 🧐*");
     }
 
-    if (!isNaN(num) && session && session.step === 'select_quality' && session.command === 'song') {
-      const selected = session.video
-      const url = selected.url
-      const download = await yta(url)
-      const fileName = selected.title + ".mp3"
+    const songData = searchResults.videos[0];
+    const songUrl = songData.url;
 
-      if (num === 1) {
-        await conn.sendMessage(from, { audio: { url: download.dl_url }, mimetype: "audio/mpeg" }, { quoted: mek })
-      } else if (num === 2) {
-        await conn.sendMessage(from, { document: { url: download.dl_url }, mimetype: "audio/mpeg", fileName }, { quoted: mek })
-      } else {
-        return reply("Invalid option.")
+    // Using denethdev-ytmp3 to fetch the download link
+    const result = await ddownr.download(songUrl, 'mp3'); // Download in mp3 format
+    const downloadLink = result.downloadUrl; // Get the download URL
+
+    let songDetailsMessage = `*ＹＯＵＴＵＢＥ ＡＵＤＩＯ ＤＬ*\n\n`;
+    songDetailsMessage += `*☘️ Title:* ${songData.title}\n`;
+    songDetailsMessage += `*👀 Views:* ${songData.views}\n`;
+    songDetailsMessage += `*⏰ Duration:* ${songData.timestamp}\n`;
+    songDetailsMessage += `*📆 Uploaded:* ${songData.ago}\n`;
+    songDetailsMessage += `*📽 Channel:* ${songData.author.name}\n`;
+    songDetailsMessage += `*🖇 URL:* ${songData.url}\n\n`;
+    songDetailsMessage += `*Choose Your Download Format:*\n\n`;
+    songDetailsMessage += `1 || Audio File 🎶\n`;
+    songDetailsMessage += `2 || Document File 📂\n\n`;
+    songDetailsMessage += `> Qᴜᴇᴇɴ ꜱᴇɴᴜ ᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ®`;
+
+    // Send the video thumbnail with song details
+    const sentMessage = await messageHandler.sendMessage(from, {
+      image: { url: songData.thumbnail },
+      caption: songDetailsMessage,
+    }, { quoted: quotedMessage });
+
+    // Listen for the user's reply to select the download format
+    messageHandler.ev.on("messages.upsert", async (update) => {
+      const message = update.messages[0];
+      if (!message.message || !message.message.extendedTextMessage) return;
+
+      const userReply = message.message.extendedTextMessage.text.trim();
+
+      // Handle the download format choice
+      if (message.message.extendedTextMessage.contextInfo.stanzaId === sentMessage.key.id) {
+        switch (userReply) {
+          case '1': // Audio File
+            await messageHandler.sendMessage(from, {
+              audio: { url: downloadLink },
+              mimetype: "audio/mpeg"
+            }, { quoted: quotedMessage });
+            break;
+          case '2': // Document File
+            await messageHandler.sendMessage(from, {
+              document: { url: downloadLink },
+              mimetype: 'audio/mpeg',
+              fileName: `${songData.title}.mp3`,
+              caption: `${songData.title}\n\n> ᴅᴇɴᴇᴛʜ-ᴍᴅ ʙʏ ᴋɪɴɢ X ᴅᴇɴᴇᴛʜᴅᴇᴠ®`
+            }, { quoted: quotedMessage });
+            break;
+          default:
+            reply("*Invalid Option. Please Select A Valid Option 🙄*");
+            break;
+        }
       }
-
-      delete store[from]
-      return
-    }
-
-    const search = await yts(q)
-    const results = search.videos.slice(0, 5)
-    if (results.length === 0) return reply("No results found.")
-
-    let list = `*ðŸŽµ Choose a song:*
-
-`
-    results.forEach((v, i) => {
-      list += `${i + 1}. ${v.title} [${v.timestamp}]
-`
-    })
-    list += `
-_Reply with a number (1-${results.length})_`
-
-    store[from] = { command: 'song', step: 'select_result', results }
-    return reply(list)
-  } catch (e) {
-    console.error(e)
-    return reply(`_Error occurred. Try again later._`)
+    });
+  } catch (error) {
+    console.error(error);
+    reply("*An Error Occurred While Processing Your Request 😔*");
   }
-})
-
-cmd({
-  pattern: "video",
-  desc: "Download YouTube videos with quality selection.",
-  react: "ðŸŽ¥",
-  category: "download",
-  filename: __filename
-}, async (conn, mek, m, { from, q, reply, pushname }) => {
-  try {
-    if (!q) return reply("Please enter a title or URL")
-
-    const session = store[from]
-    const num = parseInt(q)
-
-    if (!isNaN(num) && session && session.step === 'select_result' && session.command === 'video') {
-      const selected = session.results[num - 1]
-      if (!selected) return reply("Invalid selection.")
-      store[from] = { step: 'select_quality', command: 'video', video: selected, from }
-
-      const buttons = `*Select video quality:*
-
-1. 360p
-2. 480p
-3. 720p
-4. 360p (Document)`
-      return reply(buttons)
-    }
-
-    if (!isNaN(num) && session && session.step === 'select_quality' && session.command === 'video') {
-      const selected = session.video
-      const url = selected.url
-      const download = await ytv(url)
-      const fileName = selected.title + ".mp4"
-
-      if (num >= 1 && num <= 3) {
-        await conn.sendMessage(from, { video: { url: download.dl_url }, mimetype: "video/mp4" }, { quoted: mek })
-      } else if (num === 4) {
-        await conn.sendMessage(from, { document: { url: download.dl_url }, mimetype: "video/mp4", fileName }, { quoted: mek })
-      } else {
-        return reply("Invalid option.")
-      }
-
-      delete store[from]
-      return
-    }
-
-    const search = await yts(q)
-    const results = search.videos.slice(0, 5)
-    if (results.length === 0) return reply("No results found.")
-
-    let list = `*ðŸŽ¥ Choose a video:*
-
-`
-    results.forEach((v, i) => {
-      list += `${i + 1}. ${v.title} [${v.timestamp}]
-`
-    })
-    list += `
-_Reply with a number (1-${results.length})_`
-
-    store[from] = { command: 'video', step: 'select_result', results }
-    return reply(list)
-  } catch (e) {
-    console.error(e)
-    return reply(`_Error occurred. Try again later._`)
-  }
-})
+});
