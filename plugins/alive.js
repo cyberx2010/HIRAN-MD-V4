@@ -1,235 +1,95 @@
-const config = require('../config')
-const {cmd , commands} = require('../command')
-const os = require("os")
-const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson} = require('../lib/functions')
-cmd({
-    pattern: "alive",
-    desc: "Check bot online or no.",
-    category: "main",
-    filename: __filename
-},
-async(conn, mek, m,{from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply}) => {
-try{
-return await conn.sendMessage(from,{image: {url: config.ALIVE_IMG},caption: config.ALIVE_MSG},{quoted: mek})
-}catch(e){
-console.log(e)
-reply(`${e}`)
-}
-})
+const { performance } = require('perf_hooks');
+const os = require('os');
+const moment = require('moment-timezone');
 
-//============ping=======
-cmd({
-    pattern: "ping",
-    react: "⚡",
-    alias: ["speed"],
-    desc: "Check bot\'s ping",
-    category: "main",
-    use: '.ping',
-    filename: __filename
-},
-async(conn, mek, m,{from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply}) => {
-try{
-var inital = new Date().getTime();
-let ping = await conn.sendMessage(from , { text: '```Pinging To index.js!!!```'  }, { quoted: mek } )
-var final = new Date().getTime();
-return await conn.edit(ping, '*Pong*\n *' + (final - inital) + ' ms* ' )
-} catch (e) {
-reply(`${e}`)
-console.log(e)
-}
-})
+global.aliveMenus = global.aliveMenus || new Map();
 
-//===========menu========
+module.exports = {
+  cmd:'alive',
+  alias:['uptime'],
+  desc: 'Stylish alive message with ping and number reply options',
+  category: 'owner',
+  react: '✅',
 
-cmd({
-    pattern: "menu",
-    alias: ["list"],
-    desc: "menu the bot",
-    react: "📜",
-    category: "main"
-},
-async (conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply }) => {
-    try {
-    
-        let menu = {
-            main: '',
-            download: '',
-            group: '',
-            owner: '',
-            convert: '',
-            ai: '',
-            tools: '',
-            search: '',
-            fun: '',
-            voice: '',
-            other: ''
-        };
+  async handler(m, { conn, command }) {
+    const body = (m.text || '').trim();
+    const name = m.pushName || 'User';
+    const prefix = '.';
+    const version = '0.1.0';
+    const time = moment().tz('Asia/Colombo').format('HH:mm:ss');
+    const date = moment().tz('Asia/Colombo').format('DD/MM/YYYY');
+    const uptime = process.uptime();
+    const formatUptime = (secs) => {
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      const s = Math.floor(secs % 60);
+      return `${h} hours, ${m} minutes, ${s} seconds`;
+    };
+    const memUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
+    const memTotal = (os.totalmem() / 1024 / 1024).toFixed(0);
 
-        for (let i = 0; i < commands.length; i++) {
-            if (commands[i].pattern && !commands[i].dontAddCommandList) {
-                menu[commands[i].category] += `│   .${commands[i].pattern}\n`;
-            }
-        }
-        let desc = `*👋 Hello ${pushname}*
-     
-     *|I'm 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭 By UDMODZ*
-
-*╭─「 ᴄᴏᴍᴍᴀɴᴅ ᴘᴀɴᴇʟ 」*
-*│◈ ʀᴜɴᴛɪᴍᴇ :* ${runtime(process.uptime())}
-*│◈ ʀᴀᴍ ᴜꜱᴀɢᴇ :* ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)}MB / ${Math.round(require('os').totalmem / 1024 / 1024)}MB
-*╰──────────●●►*
-*╭────────*
-*│
-*│ 1   OWNER*
-*│ 2   CONVERT*
-*│ 3   AI*
-*│ 4   SEARCH*
-*│ 5   DOWNLOAD*
-*│ 6   FUN*
-*│ 7   MAIN*
-*│ 8   GROUP*
-*│ 9   OTHER*
-*╰─────────
-
-> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴜᴅᴍᴏᴅᴢ-ᴍᴅ`;
-
-
-
-        const vv = await conn.sendMessage(from, {
-  text: desc,
-  contextInfo: {
-    forwardingScore: 0,
-    isForwarded: true,
-    forwardedNewsletterMessageInfo: {
-      newsletterName: '  |   𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭 ',
-      newsletterJid: "120363183696686259@newsletter",
-    },   externalAdReply: { 
-title: 'UDMODZ-MD',
-body: `Hi ${pushname} 💙`,
-mediaType: 1,
-sourceUrl: 'https://queen-udmodz.vercel.app/',
-thumbnailUrl: 'https://i.ibb.co/qL9HpVJp/4795.jpg',
-renderLargerThumbnail: true,
-showAdAttribution: true
-}
-  }
-}, { quoted: mek });
-
-        conn.ev.on('messages.upsert', async (msgUpdate) => {
-            const msg = msgUpdate.messages[0];
-            if (!msg.message || !msg.message.extendedTextMessage) return;
-
-            const selectedOption = msg.message.extendedTextMessage.text.trim();
-
-            if (msg.message.extendedTextMessage.contextInfo && msg.message.extendedTextMessage.contextInfo.stanzaId === vv.key.id) {
-                switch (selectedOption) {
-                    case '1':
-                        reply(`*◈╾──OWNER MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.owner}│ 
-╰──────────────────●●►
-
-> *𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭*`);
-                        break;
-                    case '2':               
-                        reply(`*◈╾──CONVERT MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.convert}│
-╰──────────────────●●►
-
-> 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭`);
-                        break;
-                    case '3':               
-                        reply(`*◈╾──AI MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.ai}│
-╰──────────────────●●►
-
-> 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭`);
-                        break;
-                    case '4':               
-                        reply(`*◈╾──SEARCH MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.search}│
-╰──────────────────●●►
-
-> 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭`);
-                        break;
-                    case '5':               
-                        reply(`*◈╾──DOWNLOAD MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.download}│
-╰──────────────────●●►
-
-> 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭`);
-                        break;
-                    case '7':               
-                        reply(`*◈╾──MAIN MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.main}│
-╰──────────────────●●►
-
-
-> 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭`);
-                        break;
-                    case '8':               
-                        reply(`*◈╾──GROUP MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.group}│
-╰──────────────────●●►
-
-> 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭`);
-                       break;
-                    case '6':               
-                        reply(`*◈╾──FUN MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.fun}│
-╰──────────────────●●►
-
-> 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭`);
-
-                        break;
-                    case '9':               
-                        reply(`*◈╾──OTHER MENU──╼◈*
-
-╭────────●●►
-│ 
-${menu.other}│
-${menu.tools}│
-╰──────────────────●●►
-
-
-> 𝗤𝗨𝗘𝗘𝗡 𝗨𝗗𝗠𝗢𝗗𝗭`);
-
-
-                        break;
-                    default:
-                        reply("Invalid option. Please select a valid option🔴");
-                }
-
-            }
-        });
-
-    } catch (e) {
-        console.error(e);
-        await conn.sendMessage(from, { react: { text: '❌', key: mek.key } })
-        reply('An error occurred while processing your request.');
+    // ── Handle number replies ──
+    if (/^[1-2]$/.test(body) && m.quoted && global.aliveMenus.has(m.quoted.id)) {
+      if (body === '1') {
+        await conn.sendMessage(m.chat, {
+          text: '*COMMANDS MENU*\n\n- .alive\n- .ping\n- .menu\n- .help\n\n(More coming soon)'
+        }, { quoted: m });
+      } else if (body === '2') {
+        const start = performance.now();
+        const wait = await conn.sendMessage(m.chat, { text: 'Measuring speed...' }, { quoted: m });
+        const end = performance.now();
+        const ping = (end - start).toFixed(2);
+        await conn.sendMessage(m.chat, {
+          text: `*HIRAN-MD Speed*\n\nSpeed: \`${ping}ms\``
+        }, { quoted: wait });
+      }
+      return;
     }
-});
 
+    // ── Handle direct command ──
+    if (command === 'alive') {
+      const aliveText = `
+👋  𝐇𝐈, ${name} 𝐈❜𝐀𝐌 𝐀𝐋𝐈𝐕𝐄 𝐍𝐎𝐖 👾
+
+*╭─「 ᴅᴀᴛᴇ ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ 」*
+*│*📅 *\`Date\`*: ${date}
+*│*⏰ *\`Time\`*: ${time}
+*╰──────────●●►*
+
+*╭─「 ꜱᴛᴀᴛᴜꜱ ᴅᴇᴛᴀɪʟꜱ 」*
+*│*👤 *\`User\`*: ${name}
+*│*✒️ *\`Prefix\`*: ${prefix}
+*│*🧬 *\`Version\`*: ${version}
+*│*🎈 *\`Platform\`*: ${os.platform()}
+*│*📡 *\`Host\`*: heroku
+*│*📟 *\`Uptime\`*: ${formatUptime(uptime)}
+*│*📂 *\`Memory\`*: ${memUsed}MB / ${memTotal}MB
+*╰──────────●●►*
+
+*╭──────────●●►*
+*│* *Hello , I am alive now!!*
+*╰──────────●●►* 
+
+*🔢 Reply below number*
+
+1 │❯❯◦ COMMANDS MENU  
+2 │❯❯◦CyberX-BOT SPEED
+
+*Github Repo:* Coming Soon
+
+*㋛ 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝙷𝙸𝚁𝙰𝙽*
+`.trim();
+
+      const sent = await conn.sendMessage(m.chat, { text: aliveText }, { quoted: m });
+      global.aliveMenus.set(sent.key.id, true);
+    }
+
+    if (command === 'ping') {
+      const t1 = performance.now();
+      const wait = await conn.sendMessage(m.chat, { text: 'Pinging...' }, { quoted: m });
+      const t2 = performance.now();
+      const ping = (t2 - t1).toFixed(2);
+      await conn.sendMessage(m.chat, { text: `*PING RESULT*\n\nSpeed: \`${ping}ms\`` }, { quoted: wait });
+    }
+  }
+};
