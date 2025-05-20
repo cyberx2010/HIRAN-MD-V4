@@ -41,7 +41,6 @@ console.log(e)
 
 //===========menu========
 
-const os = require('os');
 cmd({
     pattern: "menu",
     alias: ["list"],
