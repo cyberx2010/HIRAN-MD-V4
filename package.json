@@ -11,7 +11,7 @@
   "dependencies": {
     "@whiskeysockets/baileys": "github:AxellNetwork/Baileys",
     "@adiwajshing/keyed-db": "^0.2.4",
-    "@dark-yasiya/scrap":"^1.0.1",
+    "denethdev-ytmp3": "1.0.3",
     "google-tts-api": "^2.0.2",
     "pino": "^7.0.5",
     "pm2": "^6.0.6",
