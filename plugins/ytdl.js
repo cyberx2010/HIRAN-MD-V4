@@ -1,89 +1,124 @@
-const { cmd } = require('../command'); const yts = require('yt-search'); const ddownr = require('denethdev-ytmp3');
+const { cmd } = require('../command');
+const yts = require('yt-search');
+const ddownr = require('denethdev-ytmp3');
+const fetch = require('node-fetch');
+const defaultPreview = 'https://files.catbox.moe/16uz1x.jpg';
 
-cmd({ pattern: "yt", desc: "Download YouTube songs or videos.", category: "download", react: '✓', filename: __filename }, async (messageHandler, context, quotedMessage, { from, reply, q }) => { try { if (!q) return reply("Please Provide A Song Or Video Name Or URL 🙄");
+const isYoutubeUrl = (url) => /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(url);
 
-// Search YouTube
-const searchResults = await yts(q);
-if (!searchResults || searchResults.videos.length === 0) {
-  return reply("*No Video Or Song Found Matching Your Query 🧐*");
-}
+cmd({
+  pattern: "yt",
+  desc: "Download YouTube song or video",
+  category: "download",
+  react: "🎶",
+  filename: __filename
+}, async (m, ctx, quoted, { from, reply, q }) => {
+  try {
+    if (!q) return reply("*Please provide a YouTube URL or search query 🙄*");
 
-const videoData = searchResults.videos[0];
-const videoUrl = videoData.url;
+    const pick = m.ev.once || m.ev.on;
 
-// Download audio and video URLs using denethdev-ytmp3
-const audioResult = await ddownr.download(videoUrl, 'mp3');
-const videoResult = await ddownr.download(videoUrl, 'mp4');
+    const processDownload = async (video) => {
+      const resultMp3 = await ddownr.download(video.url, 'mp3');
+      const resultMp4Req = await fetch(`https://apis.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(video.url)}`);
+      const resultMp4 = await resultMp4Req.json();
 
-const audioDownloadLink = audioResult.downloadUrl;
-const videoQualities = videoResult.qualities || [];
+      if (!resultMp4?.result?.download_url) return reply("*Video download failed.*");
 
-// Compose quality list message
-let detailsMessage = `*🎶 ＹＯＵＴＵＢＥ ＤＯＷＮＬＯＡＤＥＲ 🎥*\n\n`;
-detailsMessage += `*🌿 Title:* ${videoData.title}\n`;
-detailsMessage += `*️➥ Views:* ${videoData.views}\n`;
-detailsMessage += `*➥ Duration:* ${videoData.timestamp}\n`;
-detailsMessage += `*➥ Uploaded:* ${videoData.ago}\n`;
-detailsMessage += `*➥ Channel:* ${videoData.author.name}\n`;
-detailsMessage += `*➥ URL:* ${videoUrl}\n\n`;
-detailsMessage += `*Choose Your Download Format:*\n\n`;
-detailsMessage += `1 || Audio File 🎵\n`;
-detailsMessage += `2 || Audio Document 📂\n`;
+      const caption = `*🍃 ＹＴ ＤＯＷＮＬＯＡＤＥＲ 🎧🎥*\n\n` +
+        `*☘️ Title:* ${video.title}\n` +
+        `*➥ Views:* ${video.views}\n` +
+        `*➥ Duration:* ${video.timestamp}\n` +
+        `*➥ Uploaded:* ${video.ago}\n` +
+        `*➥ Channel:* ${video.author.name}\n` +
+        `*➥ URL:* ${video.url}\n\n` +
+        `*Choose Format:*\n` +
+        `1 || Audio File 🎶\n2 || Audio Document 📂\n` +
+        `3 || Video File 🎥\n4 || Video Document 📂\n\n` +
+        `> ʜɪʀᴀɴ ᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
 
-let qualityOptions = {};
-videoQualities.forEach((quality, index) => {
-  const optionNum = index + 3;
-  detailsMessage += `${optionNum} || ${quality.qualityLabel} ${quality.isDocument ? '📁' : '🎬'}\n`;
-  qualityOptions[optionNum] = quality;
-});
+      const msg = await m.sendMessage(from, {
+        image: { url: video.thumbnail },
+        caption
+      }, { quoted });
 
-detailsMessage += `\n> ʜɪʀᴀɴ ᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
+      pick.call(m.ev, "messages.upsert", async (u) => {
+        const msg2 = u.messages[0];
+        if (!msg2.message?.extendedTextMessage) return;
+        if (msg2.message.extendedTextMessage.contextInfo?.stanzaId !== msg.key.id) return;
 
-const sentMessage = await messageHandler.sendMessage(from, {
-  image: { url: videoData.thumbnail },
-  caption: detailsMessage,
-}, { quoted: quotedMessage });
+        const format = msg2.message.extendedTextMessage.text.trim();
 
-messageHandler.ev.on("messages.upsert", async (update) => {
-  const message = update.messages[0];
-  if (!message.message || !message.message.extendedTextMessage) return;
+        const thumbBuffer = await (await fetch(video.thumbnail)).buffer();
 
-  const userReply = message.message.extendedTextMessage.text.trim();
-  if (message.message.extendedTextMessage.contextInfo?.stanzaId === sentMessage.key.id) {
-    switch (userReply) {
-      case '1':
-        await messageHandler.sendMessage(from, {
-          audio: { url: audioDownloadLink },
-          mimetype: "audio/mpeg"
-        }, { quoted: quotedMessage });
-        break;
-      case '2':
-        await messageHandler.sendMessage(from, {
-          document: { url: audioDownloadLink },
-          mimetype: "audio/mpeg",
-          fileName: `${videoData.title}.mp3`,
-          caption: `🎵 ${videoData.title}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
-        }, { quoted: quotedMessage });
-        break;
-      default:
-        if (qualityOptions[userReply]) {
-          const selected = qualityOptions[userReply];
-          const msgOptions = selected.isDocument ? {
-            document: { url: selected.url },
+        if (format === "1") {
+          await m.sendMessage(from, {
+            audio: { url: resultMp3.downloadUrl },
+            mimetype: "audio/mpeg",
+            jpegThumbnail: thumbBuffer
+          }, { quoted });
+        } else if (format === "2") {
+          await m.sendMessage(from, {
+            document: { url: resultMp3.downloadUrl },
+            mimetype: 'audio/mpeg',
+            fileName: `HiranMD-Audio-${video.title}.mp3`,
+            caption: `${video.title}\n\n> ʜɪʀᴀɴ ᴍᴅ`,
+            jpegThumbnail: thumbBuffer
+          }, { quoted });
+        } else if (format === "3") {
+          await m.sendMessage(from, {
+            video: { url: resultMp4.result.download_url },
             mimetype: "video/mp4",
-            fileName: `${videoData.title} (${selected.qualityLabel}).mp4`,
-            caption: `🎬 ${videoData.title}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
-          } : {
-            video: { url: selected.url },
-            mimetype: "video/mp4",
-            caption: `🎬 ${videoData.title} [${selected.qualityLabel}]\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`
-          };
-          await messageHandler.sendMessage(from, msgOptions, { quoted: quotedMessage });
+            jpegThumbnail: thumbBuffer
+          }, { quoted });
+        } else if (format === "4") {
+          await m.sendMessage(from, {
+            document: { url: resultMp4.result.download_url },
+            mimetype: 'video/mp4',
+            fileName: `HiranMD-Video-${video.title}.mp4`,
+            caption: `${video.title}\n\n> ʜɪʀᴀɴ ᴍᴅ`,
+            jpegThumbnail: thumbBuffer
+          }, { quoted });
         } else {
-          reply("*Invalid Option. Please Select A Valid Number 🙄*");
+          reply("*Invalid option. Choose 1–4*");
         }
+      });
+    };
+
+    if (isYoutubeUrl(q)) {
+      const search = await yts({ videoId: q.split('v=')[1]?.split('&')[0] || q.split('/').pop() });
+      if (!search || !search.title) return reply("*Could not fetch video details.*");
+      return await processDownload(search);
     }
+
+    const results = await yts(q);
+    if (!results.videos.length) return reply("*No results found.*");
+
+    const top = results.videos.slice(0, 5);
+    let list = "*🍃 ＹＴ ＲＥＳＵＬＴＳ 🎧🎥*\n\n";
+    top.forEach((v, i) => {
+      list += `${i + 1}. ${v.title} - ${v.timestamp}\n`;
+    });
+    list += `\n_Reply with 1-5 to choose._\n\n> ʜɪʀᴀɴ ᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
+
+    const sent = await m.sendMessage(from, {
+      image: { url: defaultPreview },
+      caption: list
+    }, { quoted });
+
+    pick.call(m.ev, "messages.upsert", async (u) => {
+      const msg = u.messages[0];
+      if (!msg.message?.extendedTextMessage) return;
+      if (msg.message.extendedTextMessage.contextInfo?.stanzaId !== sent.key.id) return;
+
+      const choice = parseInt(msg.message.extendedTextMessage.text.trim());
+      if (isNaN(choice) || choice < 1 || choice > 5) return reply("*Invalid choice. Choose 1–5.*");
+
+      await processDownload(top[choice - 1]);
+    });
+
+  } catch (err) {
+    console.error(err);
+    reply("*An error occurred while processing your request 😔*");
   }
 });
-
-} catch (error) { console.error(error); reply("An Error Occurred While Processing Your Request 😔"); } });
