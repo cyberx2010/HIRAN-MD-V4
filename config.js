@@ -6,7 +6,27 @@ function convertToBool(text, fault = 'true') {
 }
 module.exports = {
 SESSION_ID: process.env.SESSION_ID || "dR4ATa7b#f-fBI5KWwIOHRasMrtRauCOiQlpDRpv872U1b7EMPy0",
-ALIVE_IMG : process.env.ALIVE_IMG || "https://i.ibb.co/nMSm7kCD/file-000000002fb461f79161fc4b64d5b0ff.png",
-ALIVE_MSG : process.env.ALIVE_MSG || "*🤖𝐇𝐞𝐲 𝐈'𝐦 💃bot name 🤍 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩 𝐁𝐨𝐭⚡*\n\n*🔔𝐈'𝐦 𝐀𝐥𝐢𝐯𝐞 𝐍𝐨𝐰🎠*\n\n*⚖️𝐏𝐨𝐰𝐞𝐫𝐞𝐝 𝐁𝐲 - : Bot Name",
-AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "true",
+PREFIX: process.env.PREFIX || ".",
+// add your prifix for bot   
+// automatic delete links witho remove member 
+OWNER_NUMBER: process.env.OWNER_NUMBER || "94781536595",
+// add your bot owner number
+MODE: process.env.MODE || "private",
+// make bot public-private-inbox-group 
+ANTI_LINK: process.env.ANTI_LINK || "false",
+// make anti link true,false for groups 
+AUTO_VOICE: process.env.AUTO_VOICE || "true",
+// make true for send automatic voices
+AUTO_STICKER: process.env.AUTO_STICKER || "true",
+// make true for automatic stickers 
+AUTO_REPLY: process.env.AUTO_REPLY || "true",
+// make true or false automatic text reply 
+ALWAYS_ONLINE: process.env.ALWAYS_ONLINE || "false",
+// maks true for always online 
+PUBLIC_MODE: process.env.PUBLIC_MODE || "false",
+// make false if want private mod
+AUTO_TYPING: process.env.AUTO_TYPING || "false",
+// true for automatic show typing   
+FAKE_RECORDING: process.env.FAKE_RECORDING || "true",
+// make it true for auto recoding 
 };
