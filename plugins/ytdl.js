@@ -87,4 +87,3 @@ messageHandler.ev.on("messages.upsert", async (update) => {
 });
 
 } catch (error) { console.error(error); reply("An Error Occurred While Processing Your Request 😔"); } });
-
