@@ -3,6 +3,24 @@ const process = require('process')
 const { cmd } = require('../command')
 const { performance } = require('perf_hooks')
 
+const qMessage = {
+  key: {
+    fromMe: false,
+    remoteJid: "status@broadcast",
+    participant: "0@s.whatsapp.net",
+  },
+  message: {
+    contactMessage: {
+      displayName: "HIRANYA SATHSARA",
+      vcard: `BEGIN:VCARD
+VERSION:3.0
+FN:HIRANYA SATHSARA
+TEL:+94723241546
+END:VCARD`
+    }
+  }
+}
+
 function formatRuntime(seconds) {
   const hrs = Math.floor(seconds / 3600)
   const mins = Math.floor((seconds % 3600) / 60)
@@ -11,20 +29,30 @@ function formatRuntime(seconds) {
 }
 
 cmd({
-  pattern: 'sysinfo',
+  pattern: 'system',
   react: '🖥️',
-  desc: 'Show system info',
+  desc: 'Show system info with latency pong',
   category: 'main',
   filename: __filename
 }, async (conn, mek, m, { reply }) => {
   try {
+    // Measure latency start
+    const start = performance.now()
+
+    // Send initial latency check message
+    const sentMsg = await conn.sendMessage(mek.key.remoteJid, { text: '🏓 Pinging...' }, { quoted: qMessage })
+
+    // Calculate latency
+    const latency = (performance.now() - start).toFixed(2)
+
+    // Prepare system info
     const uptime = formatRuntime(Math.floor(process.uptime()))
     const usedMemMB = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)
     const totalMemMB = (os.totalmem() / 1024 / 1024).toFixed(0)
     const hostname = os.hostname()
     const ownerName = 'HIRANYA SATHSARA'
     const version = require('../package.json').version || '1.0.0'
-    const channelLink = 'https://whatsapp.com/channel/0029Vb0Anqe9RZAcEYc2fT2c'
+    const channelLink = 'https://whatsapp.com/channel/0029VbAqseT30LKNCO71mQ3d'
 
     const text = `
 *╭───────────────●●►*
@@ -38,40 +66,20 @@ cmd({
 *➤ ᴠᴇʀsɪᴏɴ:* ${version}
 *➤ ᴄʜᴀɴɴᴇʟ:* ${channelLink}
 
+*➤ ʟᴀᴛᴇɴᴄʏ:* ${latency} ms Pong!
+
 *─◈ ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ ◈─*
 `.trim()
 
-    await conn.sendMessage(mek.key.remoteJid, {
-      image: { url: 'https://files.catbox.moe/kzemf5.jpg' },
-      caption: text
-    }, { quoted: mek })
+    // Delete initial ping message
+    await conn.deleteMessage(mek.key.remoteJid, { id: sentMsg.key.id, remoteJid: mek.key.remoteJid })
+
+    // Send system info with latency pong, quoted as qMessage
+    await conn.sendMessage(mek.key.remoteJid, { 
+      image: { url: 'https://files.catbox.moe/kzemf5.jpg' }, 
+      caption: text 
+    }, { quoted: qMessage })
   } catch (e) {
     reply('❌ Failed to get system info')
   }
-})
-
-cmd({
-  pattern: 'ping',
-  react: '🏓',
-  desc: 'Check bot latency',
-  category: 'main',
-  filename: __filename
-}, async (conn, mek, m, { reply }) => {
-  const start = performance.now()
-  const sentMsg = await conn.sendMessage(mek.key.remoteJid, { text: '🏓 Pinging...' }, { quoted: mek })
-  const ping = (performance.now() - start).toFixed(2)
-
-  const text = `
-*╭───────────────●●►*
-*┃  𝗣𝗜𝗡𝗚 𝗥𝗘𝗦𝗣𝗢𝗡𝗦𝗘 ↷*
-*╰───────────────●●►*
-
-*➤ ʟᴀᴛᴇɴᴄʏ:* ${ping} ms
-*➤ sᴛᴀᴛᴜs:* ✅ ᴏɴʟɪɴᴇ & ᴀᴄᴛɪᴠᴇ
-
-*─◈ ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ ◈─*
-`.trim()
-
-  await conn.sendMessage(mek.key.remoteJid, { text }, { quoted: mek })
-  await conn.deleteMessage(mek.key.remoteJid, { id: sentMsg.key.id, remoteJid: mek.key.remoteJid })
 })
