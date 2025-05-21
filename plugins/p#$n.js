@@ -1,127 +1,128 @@
 const { cmd } = require('../command');
 const { fetchJson } = require('../lib/functions');
 
-const searchCache = {};
-
-const services = {
-  "xnxx": {
-    site: "xnxx",
-    search: "https://aemt.me/xnxxsearch?query=",
-    download: "https://aemt.me/xnxxdl?url="
-  },
-  "phub": {
-    site: "pornhub",
-    search: "https://aemt.me/phsearch?query=",
-    download: "https://aemt.me/phdl?url="
-  },
-  "red": {
-    site: "redtube",
-    search: "https://aemt.me/redsearch?query=",
-    download: "https://aemt.me/reddl?url="
-  },
-  "youp": {
-    site: "youporn",
-    search: "https://aemt.me/youpsearch?query=",
-    download: "https://aemt.me/youpdl?url="
-  }
+const searchApis = {
+  xnxx: 'https://toy-api.vercel.app/api/xnxx/search?query=',
+  phub: 'https://toy-api.vercel.app/api/phub/search?query=',
+  red: 'https://toy-api.vercel.app/api/redtube/search?query=',
+  youp: 'https://toy-api.vercel.app/api/youporn/search?query=',
 };
 
-for (const [cmdName, config] of Object.entries(services)) {
+const detailApis = {
+  xnxx: 'https://toy-api.vercel.app/api/xnxx/download?url=',
+  phub: 'https://toy-api.vercel.app/api/phub/download?url=',
+  red: 'https://toy-api.vercel.app/api/redtube/download?url=',
+  youp: 'https://toy-api.vercel.app/api/youporn/download?url=',
+};
+
+const isValidUrl = url => /^https?:\/\/(www\.)?(xnxx|pornhub|redtube|youporn)\.com/.test(url);
+
+global.replyMap = new Map();
+
+for (const cmdName of Object.keys(searchApis)) {
   cmd({
     pattern: cmdName,
-    react: "🔞",
-    desc: `${config.site} video downloader`,
-    category: "downloader",
-    filename: __filename
-  }, async (conn, mek, m, { q, isCmd, reply }) => {
-    const from = m.chat;
-    const sender = m.sender;
+    desc: `Download ${cmdName.toUpperCase()} videos`,
+    category: 'adult',
+    react: '🍑',
+    filename: __filename,
+  }, async (conn, m, { reply, q }) => {
+    if (!q) return reply('Enter a search term or send a video link.');
 
-    // Quality selection
-    if (!isCmd && searchCache[from] && Array.isArray(searchCache[from][sender])) {
-      const selected = parseInt(q.trim()) - 1;
-      const urls = searchCache[from][sender];
-      if (!urls[selected]) return reply("❌ Invalid quality number.");
-      delete searchCache[from][sender];
+    const site = cmdName;
+    const isLink = isValidUrl(q);
 
-      return await conn.sendMessage(from, {
-        video: { url: urls[selected] },
-        mimetype: 'video/mp4',
-        caption: `> ʜɪʀᴀɴ ᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ\n\n🔞 Video sent in selected quality. Enjoy!`
-      }, { quoted: mek });
-    }
-
-    // Video selection
-    if (!isCmd && searchCache[from] && searchCache[from][sender] && !Array.isArray(searchCache[from][sender])) {
-      const selected = parseInt(q.trim()) - 1;
-      const results = searchCache[from][sender];
-      if (!results[selected]) return reply("❌ Invalid selection.");
-      const video = results[selected];
-      delete searchCache[from][sender];
-
-      const result = await fetchJson(`${config.download}${encodeURIComponent(video.link)}`);
-      if (!result || !result.result) return reply("❌ Failed to fetch video info.");
-
-      const { title, desc, duration, quality } = result.result;
-      let listText = '', qualities = [];
-      Object.entries(quality).forEach(([k, v], i) => {
-        listText += `*${i + 1}.* ${k}\n`;
-        qualities.push(v);
-      });
-
-      searchCache[from] = { [sender]: qualities };
-
-      return await reply(
-        `> ʜɪʀᴀɴ ᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ\n\n🎬 *${title}*\n🕐 Duration: ${duration}\n📄 ${desc}\n\n📥 *Choose quality:*\n${listText}`
-      );
-    }
-
-    // If direct video URL
-    if (q && q.includes(config.site)) {
+    if (isLink) {
       try {
-        const result = await fetchJson(`${config.download}${encodeURIComponent(q)}`);
-        if (!result || !result.result) return reply("❌ Failed to get video.");
+        const detail = await fetchJson(`${detailApis[site]}${encodeURIComponent(q)}`);
+        const { title, qualities, thumb } = detail.result;
 
-        const { title, desc, duration, quality } = result.result;
-        let listText = '', qualities = [];
-        Object.entries(quality).forEach(([k, v], i) => {
-          listText += `*${i + 1}.* ${k}\n`;
-          qualities.push(v);
+        if (!qualities || Object.keys(qualities).length === 0) {
+          return reply('No video qualities found.');
+        }
+
+        let caption = `*${title}*\n\n_Select a quality:_\n\n`;
+        const keys = Object.keys(qualities);
+        keys.forEach((k, i) => {
+          caption += `${i + 1}. ${k} (${qualities[k].split('/').pop()})\n`;
+        });
+        caption += `\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
+
+        await conn.sendMessage(m.chat, {
+          image: { url: thumb },
+          caption
+        }, { quoted: m });
+
+        global.replyMap.set(m.key.id, {
+          list: keys.map(k => qualities[k]),
+          action: async (choice) => {
+            const chosen = qualities[keys[choice - 1]];
+            return conn.sendMessage(m.chat, {
+              video: { url: chosen },
+              mimetype: 'video/mp4'
+            }, { quoted: m });
+          }
         });
 
-        searchCache[from] = { [sender]: qualities };
-
-        return await reply(
-          `> ʜɪʀᴀɴ ᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ\n\n🎬 *${title}*\n🕐 Duration: ${duration}\n📄 ${desc}\n\n📥 *Choose quality:*\n${listText}`
-        );
       } catch (e) {
         console.log(e);
-        return reply("❌ Error while fetching video.");
+        return reply('Failed to fetch video details.');
       }
-    }
 
-    // Search mode
-    try {
-      if (!q) return reply(`Send .${cmdName} <search> or direct link`);
-      const result = await fetchJson(`${config.search}${encodeURIComponent(q)}`);
-      if (!result || !result.result || result.result.length === 0) return reply("❌ No results found.");
-      const list = result.result.slice(0, 20);
+    } else {
+      try {
+        const data = await fetchJson(`${searchApis[site]}${encodeURIComponent(q)}`);
+        const results = data.result?.slice(0, 20);
 
-      let text = `> ʜɪʀᴀɴ ᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ\n\n🔍 *Top 20 ${config.site} results for:* _${q}_\n\n`;
-      list.forEach((v, i) => {
-        text += `*${i + 1}.* ${v.title}\n`;
-      });
+        if (!results || results.length === 0) return reply('No results found.');
 
-      if (!searchCache[from]) searchCache[from] = {};
-      searchCache[from][sender] = list;
+        let caption = '*Search Results:*\n\n';
+        results.forEach((res, i) => {
+          caption += `${i + 1}. ${res.title}\n`;
+        });
+        caption += `\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
 
-      return await conn.sendMessage(from, {
-        image: { url: 'https://files.catbox.moe/wgvkoa.jpg' },
-        caption: text + `\n\n_Reply with a number (1-${list.length}) to continue._`
-      }, { quoted: mek });
-    } catch (e) {
-      console.log(e);
-      return reply("❌ Error during search.");
+        await conn.sendMessage(m.chat, {
+          image: { url: 'https://files.catbox.moe/wgvkoa.jpg' },
+          caption
+        }, { quoted: m });
+
+        global.replyMap.set(m.key.id, {
+          list: results.map(r => r.link),
+          action: async (choice) => {
+            const link = results[choice - 1].link;
+            const detail = await fetchJson(`${detailApis[site]}${encodeURIComponent(link)}`);
+            const { title, qualities, thumb } = detail.result;
+
+            let msg = `*${title}*\n\n_Select a quality:_\n\n`;
+            const keys = Object.keys(qualities);
+            keys.forEach((k, i) => {
+              msg += `${i + 1}. ${k} (${qualities[k].split('/').pop()})\n`;
+            });
+            msg += `\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
+
+            await conn.sendMessage(m.chat, {
+              image: { url: thumb },
+              caption: msg
+            }, { quoted: m });
+
+            global.replyMap.set(m.key.id, {
+              list: keys.map(k => qualities[k]),
+              action: async (choice2) => {
+                const chosen = qualities[keys[choice2 - 1]];
+                return conn.sendMessage(m.chat, {
+                  video: { url: chosen },
+                  mimetype: 'video/mp4'
+                }, { quoted: m });
+              }
+            });
+          }
+        });
+
+      } catch (e) {
+        console.log(e);
+        return reply('Failed to fetch search results.');
+      }
     }
   });
 }
