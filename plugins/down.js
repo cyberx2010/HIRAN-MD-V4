@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { cmd } = require('../command');
-const { sleep } = require('../lib');
+const { sleep } = require('../lib/functions');
 
 let replyStore = {};
 
@@ -34,7 +34,7 @@ async function handleVideoDownload(conn, mek, reply, site, url, userJid) {
 
 // Command: .phub <url>
 cmd({
-  pattern: 'phub ?(.*)',
+  pattern: 'phub',
   desc: 'Download Pornhub video',
   category: 'adult',
   filename: __filename
@@ -47,7 +47,7 @@ cmd({
 
 // Command: .xnxx <url>
 cmd({
-  pattern: 'xnxx ?(.*)',
+  pattern: 'xnxx',
   desc: 'Download XNXX video',
   category: 'adult',
   filename: __filename
