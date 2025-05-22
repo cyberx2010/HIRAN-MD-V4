@@ -1,116 +1,134 @@
+const { cmd } = require('../command');
+const { fetchJson } = require('../lib/functions');
 const axios = require('axios');
+const fs = require('fs-extra');
+const path = require('path');
+const config = require('../config');
 
-module.exports = [
-  {
-    pattern: 'sinhalasub',
-    fromMe: false,
-    desc: 'Download SinhalaSub movies',
-    type: 'movie',
-    async function(conn, m, text, { reply }) {
-      if (!text) return reply('Please provide a movie name.');
+const API_URL = "https://api.skymansion.site/movies-dl/search";
+const DOWNLOAD_URL = "https://api.skymansion.site/movies-dl/download";
+const API_KEY = config.MOVIE_API_KEY;
 
-      let searchUrl = `https://www.dark-yasiya-api.site/movie/sinhalasub/search?text=${encodeURIComponent(text)}`;
-      let search = await axios.get(searchUrl).then(res => res.data.result).catch(() => null);
-      if (!search || search.length === 0) return reply('No results found.');
+let sessions = {};
 
-      let msg = `*SinhalaSub Search Results:*\n\n`;
-      search.slice(0, 20).forEach((movie, i) => {
-        msg += `${i + 1}. ${movie.title}\n`;
-      });
-      msg += `\nReply with a number to get download.`;
-      await conn.sendMessage(m.from, { text: msg }, { quoted: m });
+cmd({
+  pattern: "movie",
+  alias: ["moviedl", "films"],
+  react: '🎬',
+  category: "download",
+  desc: "Search and download movies from PixelDrain",
+  filename: __filename
+}, async (robin, m, mek, { from, q, reply }) => {
+  try {
+    if (!q && !sessions[from]) return await reply('❌ Please provide a movie name! (e.g., Deadpool)');
 
-      const filter = (msg) => msg.key?.fromMe === false && msg.key.remoteJid === m.from;
-      const picked = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(), 30000);
-        const handler = conn.ev.on('messages.upsert', async ({ messages }) => {
-          let msg = messages[0];
-          if (filter(msg)) {
-            let num = parseInt(msg.message?.conversation || msg.message?.extendedTextMessage?.text);
-            if (!isNaN(num) && num >= 1 && num <= search.length) {
-              clearTimeout(timeout);
-              handler.off();
-              resolve(num - 1);
-            } else {
-              await conn.sendMessage(m.from, { text: 'Invalid number, try again.' }, { quoted: msg });
-            }
-          }
+    // User replies with a number
+    if (!q && sessions[from]) {
+      const body = m.message?.extendedTextMessage?.text || m.message?.conversation;
+      const num = parseInt(body.trim());
+      const userSession = sessions[from];
+
+      if (userSession.stage === 'choose_movie') {
+        if (!userSession.results[num - 1]) return await reply('❌ Invalid movie selection.');
+
+        const selected = userSession.results[num - 1];
+        const detailsUrl = `${DOWNLOAD_URL}/?id=${selected.id}&api_key=${API_KEY}`;
+        const details = await fetchJson(detailsUrl);
+
+        if (!details || !details.downloadLinks || !details.downloadLinks.result.links.driveLinks.length) {
+          delete sessions[from];
+          return await reply('❌ No download links found.');
+        }
+
+        const links = details.downloadLinks.result.links.driveLinks;
+        let text = `🎬 *${selected.title}*\n\nAvailable Qualities:\n`;
+        links.forEach((link, i) => {
+          text += `${i + 1}. ${link.quality}\n`;
         });
-      }).catch(() => null);
+        text += `\n🔢 Reply with a number to select quality.`;
 
-      if (picked === null) return reply('Timed out.');
+        sessions[from] = {
+          stage: 'choose_quality',
+          links,
+          title: selected.title,
+          poster: selected.poster
+        };
 
-      let selected = search[picked];
-      let detailUrl = `https://www.dark-yasiya-api.site/movie/sinhalasub/movie?url=${selected.url}`;
-      let detail = await axios.get(detailUrl).then(res => res.data.result).catch(() => null);
+        return await robin.sendMessage(from, {
+          image: { url: selected.poster },
+          caption: text,
+          quoted: mek
+        });
+      }
 
-      if (!detail || !detail.download) return reply('Download failed.');
+      if (userSession.stage === 'choose_quality') {
+        const chosen = userSession.links[num - 1];
+        if (!chosen || !chosen.link.startsWith('http')) {
+          delete sessions[from];
+          return await reply('❌ Invalid or broken link.');
+        }
 
-      try {
-        await conn.sendMessage(m.from, {
-          video: { url: detail.download },
-          caption: `*${detail.title}*\n\n${detail.description}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`,
-          mimetype: 'video/mp4'
-        }, { quoted: m });
-      } catch (e) {
-        reply(`*${detail.title}*\n\n${detail.description}\n\nDownload: ${detail.download}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`);
+        const fileId = chosen.link.split('/').pop();
+        const directDownloadLink = `https://pixeldrain.com/api/file/${fileId}?download`;
+        const safeTitle = userSession.title.replace(/[\\/:*?"<>|]/g, '');
+        const filePath = path.join(__dirname, `${safeTitle}-${chosen.quality}.mp4`);
+        const writer = fs.createWriteStream(filePath);
+
+        await reply(`⏳ Downloading *${userSession.title}* in ${chosen.quality}...`);
+
+        const { data } = await axios({
+          url: directDownloadLink,
+          method: 'GET',
+          responseType: 'stream'
+        });
+
+        data.pipe(writer);
+
+        writer.on('finish', async () => {
+          await robin.sendMessage(from, {
+            document: fs.readFileSync(filePath),
+            mimetype: 'video/mp4',
+            fileName: `${safeTitle}-${chosen.quality}.mp4`,
+            caption: `🎬 *${userSession.title}*\n📌 Quality: ${chosen.quality}\n✅ Download Complete!\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`,
+            quoted: mek
+          });
+          fs.unlinkSync(filePath);
+        });
+
+        writer.on('error', async (err) => {
+          console.error('Download error:', err);
+          await reply('❌ Failed to download. Please try again.');
+        });
+
+        delete sessions[from];
+        return;
       }
     }
-  },
-  {
-    pattern: 'firemovie',
-    fromMe: false,
-    desc: 'Download FireMovie movies',
-    type: 'movie',
-    async function(conn, m, text, { reply }) {
-      if (!text) return reply('Please provide a movie name.');
 
-      let searchUrl = `https://www.dark-yasiya-api.site/movie/firemovie/search?text=${encodeURIComponent(text)}`;
-      let search = await axios.get(searchUrl).then(res => res.data.result).catch(() => null);
-      if (!search || search.length === 0) return reply('No results found.');
-
-      let msg = `*FireMovie Search Results:*\n\n`;
-      search.slice(0, 20).forEach((movie, i) => {
-        msg += `${i + 1}. ${movie.title}\n`;
-      });
-      msg += `\nReply with a number to get download.`;
-      await conn.sendMessage(m.from, { text: msg }, { quoted: m });
-
-      const filter = (msg) => msg.key?.fromMe === false && msg.key.remoteJid === m.from;
-      const picked = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(), 30000);
-        const handler = conn.ev.on('messages.upsert', async ({ messages }) => {
-          let msg = messages[0];
-          if (filter(msg)) {
-            let num = parseInt(msg.message?.conversation || msg.message?.extendedTextMessage?.text);
-            if (!isNaN(num) && num >= 1 && num <= search.length) {
-              clearTimeout(timeout);
-              handler.off();
-              resolve(num - 1);
-            } else {
-              await conn.sendMessage(m.from, { text: 'Invalid number, try again.' }, { quoted: msg });
-            }
-          }
-        });
-      }).catch(() => null);
-
-      if (picked === null) return reply('Timed out.');
-
-      let selected = search[picked];
-      let detailUrl = `https://www.dark-yasiya-api.site/movie/firemovie/movie?url=${selected.url}`;
-      let detail = await axios.get(detailUrl).then(res => res.data.result).catch(() => null);
-
-      if (!detail || !detail.download) return reply('Download failed.');
-
-      try {
-        await conn.sendMessage(m.from, {
-          video: { url: detail.download },
-          caption: `*${detail.title}*\n\n${detail.description}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`,
-          mimetype: 'video/mp4'
-        }, { quoted: m });
-      } catch (e) {
-        reply(`*${detail.title}*\n\n${detail.description}\n\nDownload: ${detail.download}\n\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`);
-      }
+    // Step 1: Search
+    const searchUrl = `${API_URL}?q=${encodeURIComponent(q)}&api_key=${API_KEY}`;
+    const res = await fetchJson(searchUrl);
+    if (!res || !res.SearchResult || !res.SearchResult.result.length) {
+      return await reply(`❌ No results found for: *${q}*`);
     }
+
+    const results = res.SearchResult.result.slice(0, 5);
+    let text = `🎬 *Search results for:* ${q}\n\n`;
+    results.forEach((r, i) => {
+      text += `${i + 1}. ${r.title} (${r.year || 'N/A'})\n`;
+    });
+    text += `\n🔢 Reply with a number to select a movie.`;
+
+    sessions[from] = {
+      stage: 'choose_movie',
+      results
+    };
+
+    return await reply(text);
+
+  } catch (error) {
+    console.error('Error:', error);
+    await reply('❌ Something went wrong. Please try again.');
+    delete sessions[from];
   }
-];
+});
