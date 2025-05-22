@@ -12,17 +12,24 @@ const newsSources = [
 
 let autoNewsEnabled = false;
 let autoNewsChatId = null;
-const FOOTER = "• ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴜᴡᴀ ᴛᴇᴄʜ";
 
-// **Auto News Function**
+// Change footer here to your credits
+const FOOTER = "• ᴄʀᴇᴀᴛᴇᴅ ʙʏ ʜɪʀᴀɴ ᴍᴅ | ᴛᴇᴄʜ ᴇɴᴛʜᴜsɪᴀsᴛ •";
+
 async function sendAutoNews(bot) {
   if (!autoNewsEnabled || !autoNewsChatId) return;
-  
+
+  // Validate chat ID format (example for WhatsApp)
+  if (!/^\d+@s\.whatsapp\.net$/.test(autoNewsChatId) && !autoNewsChatId.endsWith('@g.us')) {
+    console.log('❌ Invalid chat ID format for auto news');
+    return;
+  }
+
   let randomSource = newsSources[Math.floor(Math.random() * newsSources.length)];
 
   try {
     let response = await axios.get(randomSource.url);
-    let articles = response.data.articles || [];
+    let articles = response.data?.articles || [];
 
     if (articles.length === 0) return;
 
@@ -34,14 +41,13 @@ async function sendAutoNews(bot) {
     newsText += `\n${FOOTER}`;
     await bot.sendMessage(autoNewsChatId, { text: newsText });
   } catch (error) {
-    console.log(`❌ Error fetching news from ${randomSource.name}`);
+    console.error(`❌ Error fetching news from ${randomSource.name}:`, error.message);
   }
 }
 
-// **Scheduler Function (Runs every 30 minutes)**
-setInterval(() => sendAutoNews(global.bot), 30 * 60 * 1000); // 🕒 30 minutes interval
+setInterval(() => sendAutoNews(global.bot), 30 * 60 * 1000); // 30 minutes interval
 
-// **Enable Auto News**
+// Enable Auto News
 cmd({
   pattern: 'news on',
   react: '✅',
@@ -54,7 +60,7 @@ cmd({
   await m.reply('✅ *Auto news updates enabled!*');
 });
 
-// **Disable Auto News**
+// Disable Auto News
 cmd({
   pattern: 'news off',
   react: '❌',
@@ -65,7 +71,7 @@ cmd({
   await m.reply('❌ *Auto news updates disabled!*');
 });
 
-// **Set News Chat ID**
+// Set News Chat ID
 cmd({
   pattern: 'setnews',
   react: '📢',
