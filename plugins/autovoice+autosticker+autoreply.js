@@ -41,7 +41,7 @@ async (conn, mek, m, { from, body, isOwner }) => {
     }                
 });
 
-//auto reply 
+/*//auto reply 
 cmd({
   on: "body"
 },    
@@ -58,7 +58,7 @@ async (conn, mek, m, { from, body, isOwner }) => {
             }
         }
     }                
-});
+});*/
 
 
 //fake recording
