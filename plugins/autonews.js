@@ -12,7 +12,7 @@ const newsSources = [
 
 let autoNewsEnabled = false;
 let autoNewsChatId = null;
-const FOOTER = Config.FOOTER || "• ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴜᴡᴀ ᴛᴇᴄʜ";
+const FOOTER = "• ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴜᴡᴀ ᴛᴇᴄʜ";
 
 // **Auto News Function**
 async function sendAutoNews(bot) {
