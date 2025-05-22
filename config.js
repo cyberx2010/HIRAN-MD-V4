@@ -29,4 +29,5 @@ AUTO_TYPING: process.env.AUTO_TYPING || "false",
 // true for automatic show typing   
 FAKE_RECORDING: process.env.FAKE_RECORDING || "true",
 // make it true for auto recoding 
+MOVIE_API_KEY: process.env.MOVIE_API_KEY || "sky|97e02fda9faf1bf4823b9ea90816a254b38969e5",
 };
