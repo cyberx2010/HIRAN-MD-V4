@@ -12,8 +12,7 @@ seedrClient.login("vajirarathnayaka891@gmail.com", "vajirarathnayaka891@"); // R
 
 const { sinhalaSub } = require('mrnima-moviedl'); // Make sure mrnima-moviedl is installed and supports search
 const { url } = require('inspector');
-const { config } = require('process');
-const { link } = require('fs');
+const { link } = require('fs-extra');
 
 cmd({
     pattern: "sinhalasub",
