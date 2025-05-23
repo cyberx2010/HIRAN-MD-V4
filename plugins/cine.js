@@ -1,6 +1,6 @@
-const { fetchJson, sleep } = require('./lib/functions');
+const { fetchJson, sleep } = require('../lib/functions');
 const axios = require('axios');
-const { cmd } = require('./command');
+const { cmd } = require('../command');
 const { sinhalaSub } = require('mrnima-moviedl');
 require('dotenv').config();
 
