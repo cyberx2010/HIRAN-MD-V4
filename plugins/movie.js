@@ -99,25 +99,63 @@ cmd({
         const qualIndex = parseInt(text);
         if (!qualIndex || qualIndex < 1 || qualIndex > robin.selectedMovie.qualities.length)
             return await reply(`❌ Invalid quality selection! Reply with a number between 1 and ${robin.selectedMovie.qualities.length}`);
+const { cmd } = require('../command');
+const { fetchJson } = require('../lib/functions');
+const axios = require('axios');
+const fs = require('fs-extra');
+const path = require('path');
+const config = require('../config');
 
-        const quality = robin.selectedMovie.qualities[qualIndex - 1];
-        const downloadUrl = robin.selectedMovie.downloads[quality];
+const API_URL = "https://api.skymansion.site/movies-dl/search";
+const DOWNLOAD_URL = "https://api.skymansion.site/movies-dl/download";
+const API_KEY = config.MOVIE_API_KEY;
 
-        if (!downloadUrl)
-            return await reply('❌ Download link not available.');
+cmd({
+    pattern: "movie",
+    alias: ["moviedl", "films"],
+    react: '🎬',
+    category: "download",
+    desc: "Search and download movies from PixelDrain",
+    filename: __filename
+}, async (robin, m, mek, { from, q, reply }) => {
+    try {
+        if (!q || q.trim() === '') return await reply('❌ Please provide a movie name! (e.g., Deadpool)');
 
-        await reply(`⬇️ Downloading *${robin.selectedMovie.title}* - Quality: ${quality}`);
+        // Fetch movie search results
+        const searchUrl = `${API_URL}?q=${encodeURIComponent(q)}&api_key=${API_KEY}`;
+        let response = await fetchJson(searchUrl);
 
-        // Download thumbnail image buffer for WhatsApp thumbnail
-        const thumbResp = await axios.get(robin.selectedMovie.poster, { responseType: 'arraybuffer' });
-        const thumbBuffer = Buffer.from(thumbResp.data);
+        if (!response || !response.SearchResult || !response.SearchResult.result.length) {
+            return await reply(`❌ No results found for: *${q}*`);
+        }
 
-        // Download movie file
-        const filePath = path.join(__dirname, `${robin.selectedMovie.title}-${quality}.mp4`);
+        const selectedMovie = response.SearchResult.result[0]; // Select first result
+        const detailsUrl = `${DOWNLOAD_URL}/?id=${selectedMovie.id}&api_key=${API_KEY}`;
+        let detailsResponse = await fetchJson(detailsUrl);
+
+        if (!detailsResponse || !detailsResponse.downloadLinks || !detailsResponse.downloadLinks.result.links.driveLinks.length) {
+            return await reply('❌ No PixelDrain download links found.');
+        }
+
+        // Select the 720p PixelDrain link
+        const pixelDrainLinks = detailsResponse.downloadLinks.result.links.driveLinks;
+        const selectedDownload = pixelDrainLinks.find(link => link.quality === "SD 480p");
+        
+        if (!selectedDownload || !selectedDownload.link.startsWith('http')) {
+            return await reply('❌ No valid 480p PixelDrain link available.');
+        }
+
+        // Convert to direct download link
+        const fileId = selectedDownload.link.split('/').pop();
+        const directDownloadLink = `https://pixeldrain.com/api/file/${fileId}?download`;
+        
+        
+        // Download movie
+        const filePath = path.join(__dirname, `${selectedMovie.title}-480p.mp4`);
         const writer = fs.createWriteStream(filePath);
-
+        
         const { data } = await axios({
-            url: downloadUrl,
+            url: directDownloadLink,
             method: 'GET',
             responseType: 'stream'
         });
@@ -128,28 +166,23 @@ cmd({
             await robin.sendMessage(from, {
                 document: fs.readFileSync(filePath),
                 mimetype: 'video/mp4',
-                fileName: `${robin.selectedMovie.title}-${quality}.mp4`,
-                caption: `🎬 *${robin.selectedMovie.title}*\n📌 Quality: ${quality}\n✅ Download Complete!`,
-                thumbnail: thumbBuffer,
-                quoted: mek
+                fileName: `${selectedMovie.title}-480p.mp4`,
+                caption: `🎬 *${selectedMovie.title}*\n📌 Quality: 480p\n✅ *Download Complete!*`,
+                quoted: mek 
             });
             fs.unlinkSync(filePath);
-
-            // Clear saved selections
-            robin.movieSearchResults = null;
-            robin.selectedMovie = null;
         });
 
         writer.on('error', async (err) => {
-            console.error('Download error:', err);
-            await reply('❌ Failed to download the movie.');
+            console.error('Download Error:', err);
+            await reply('❌ Failed to download movie. Please try again.');
         });
-
-    } catch (e) {
-        console.error(e);
-        await reply('❌ Error during download.');
+    } catch (error) {
+        console.error('Error in movie command:', error);
+        await reply('❌ Sorry, something went wrong. Please try again later.');
     }
 });
+
 ////////===================Firemovie
 
 cmd({
