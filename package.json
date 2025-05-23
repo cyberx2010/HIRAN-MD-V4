@@ -41,8 +41,6 @@
     "@blackamda/telegram-image-url": "^1.0.0",
     "youtubedl-core": "^4.11.5",
     "moment-timezone": "latest",
-    "tiktok-scraper": "^1.4.32",
-    "pornscraper": "^1.0.6",
     "form-data": "^4.0.0",
     "seedr": "^1.1.2",
     "mrnima-moviedl": "^1.0.0"
