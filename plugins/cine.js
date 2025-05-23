@@ -1,293 +1,307 @@
-/* 
-ᴄʀᴇᴀᴛᴇᴅ ʙʏ :  𝙲𝚈𝙱𝙴𝚁 𝙰𝚂𝙷𝚄𝚄 𝙾𝙵𝙲
-contact me 94760091093
-ᴘʟᴇᴀꜱᴇ ᴅᴏɴᴛ ʀᴇᴍᴏᴠᴇ ᴏᴡɴᴇʀ ᴄʀᴇᴅɪᴛꜱ 💀📍
-*/
-const { cmd, commands } = require('../command')
+const { fetchJson, sleep } = require('./lib/functions');
 const axios = require('axios');
-const cheerio = require('cheerio');
-// cmd command ඔයාහෙ තියන විදියට require කරන්න ❤️
+const { cmd } = require('./command');
+const { sinhalaSub } = require('mrnima-moviedl');
+require('dotenv').config();
 
-const headers1 = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-  'Accept-Language': 'en-US,en;q=0.9',
-  'Referer': 'https://google.com',
+// Helper function for retrying API calls
+const fetchWithRetry = async (url, retries = 3, backoff = 1000) => {
+    try {
+        return await axios.get(url);
+    } catch (error) {
+        if (retries === 0 || !error.response || error.response.status !== 429) {
+            throw error;
+        }
+        await sleep(backoff);
+        return fetchWithRetry(url, retries - 1, backoff * 2);
+    }
 };
 
-
-async function getMovieDetailsAndDownloadLinks(query) {
-  try {
-    const response = await axios.get(`https://cinesubz.co/?s=${encodeURIComponent(query)}`, { headers1, maxRedirects: 5 });
-    const html = response.data;
-    const $ = cheerio.load(html);
-    const films = [];
-    $('article').each((i, element) => {
-      const filmName = $(element).find('.details .title a').text().trim();
-      const imageUrl = $(element).find('.image .thumbnail img').attr('src');
-      const description = $(element).find('.details .contenido p').text().trim();
-      const year = $(element).find('.details .meta .year').text().trim();
-      const imdbText = $(element).find('.details .meta .rating:first').text().trim();
-      const imdb = imdbText.replace('IMDb', '').trim();
-      const movieLink = $(element).find('.image .thumbnail a').attr('href');
-      films.push({ filmName, imageUrl, description, year, imdb, movieLink });
-    });
-    for (const film of films) {
-      const moviePageResponse = await axios.get(film.movieLink, { headers1, maxRedirects: 5 });
-      const moviePageHtml = moviePageResponse.data;
-      const $$ = cheerio.load(moviePageHtml);
-      const downloadLinks = [];
-      $$('a[href^="https://cinesubz.co/api-"]').each((index, element) => {
-        const link = $$(element).attr('href');
-        const quality = $$(element).text().trim();
-        const size = $$(element).closest('li').next().text().trim();
-                downloadLinks.push({ link, quality, size });
-      });
-      film.downloadLinks = downloadLinks;
-    }
-    return films;
-  } catch (error) {
-    console.error('❌ Error occurred:', error.message);
-    return [];
-  }
-}
-
-
-async function scrapeModifiedLink(url) {
-  try {
-    const response = await axios.get(url, { headers1, maxRedirects: 5 });
-    const $ = cheerio.load(response.data);
-    let modifiedLink = $('#link').attr('href');
-    if (!modifiedLink) {
-      console.log("⚠️ Modified link not found!");
-      return url; 
-    }
-    const urlMappings = [
-      { search: ["https://google.com/server11/1:/", "https://google.com/server12/1:/", "https://google.com/server13/1:/"], replace: "https://cinescloud.cskinglk.xyz/server1/" },
-      { search: ["https://google.com/server21/1:/", "https://google.com/server22/1:/", "https://google.com/server23/1:/"], replace: "https://cinescloud.cskinglk.xyz/server2/" },
-      { search: ["https://google.com/server3/1:/"], replace: "https://cinescloud.cskinglk.xyz/server3/" },
-      { search: ["https://google.com/server4/1:/"], replace: "https://cinescloud.cskinglk.xyz/server4/" }
-    ];
-    urlMappings.forEach(mapping => {
-      mapping.search.forEach(searchUrl => {
-        if (modifiedLink.includes(searchUrl)) {
-          modifiedLink = modifiedLink.replace(searchUrl, mapping.replace);
-        }
-      });
-    });
-        modifiedLink = modifiedLink.replace(".mp4?bot=cscloud2bot&code=", "?ext=mp4&bot=cscloud2bot&code=")
-                               .replace(".mp4", "?ext=mp4")
-                               .replace(".mkv?bot=cscloud2bot&code=", "?ext=mkv&bot=cscloud2bot&code=")
-                               .replace(".mkv", "?ext=mkv")
-                               .replace(".zip", "?ext=zip");
-    return modifiedLink;
-  } catch (error) {
-    console.error("❌ Error fetching the page:", error.message);
-    return url; 
-  }
-}
-
-
-async function fetchJsonData(data, url) { try { const response = await axios.post(url, data, { headers: { "Content-Type": "application/json" }, maxRedirects: 5 });
-const htmlResponse = await axios.get(url);
-const $ = cheerio.load(htmlResponse.data);
-const fileSize = $('p.file-info:contains("File Size") span').text().trim();
-response.data.fileSize = fileSize || "Unknown";
-return response.data;
-} catch (error) { console.error("❌ Error fetching JSON data:", error.message); return { error: error.message }; } }
-
-
+// SinhalaSub Command
 cmd({
-  pattern: "cinesubz",
-  alias: ["movie"],
-  use: ".film <query>",
-  desc: "Search and get details of films.",
-  category: "search",
-  filename: __filename
-}, async (conn, mek, m, { from, args, q, reply }) => {
-  try {
-    if (!q) return reply('🔎 Please provide a film name.');
-    
-    await m.react('🎬');
+    pattern: "sinhalasub",
+    react: '📑',
+    category: "movie",
+    desc: "Search movies on SinhalaSub and get download links",
+    filename: __filename
+}, async (conn, mek, m, { from, q, reply, isMe }) => {
+    try {
+        // Validate search query
+        if (!q || !/^[a-zA-Z0-9\s]+$/.test(q)) {
+            return await reply('*Please provide a valid search query! (e.g., Deadpool)*');
+        }
 
-    
-    const os = require('os');
-    let hostname;
-    const hostNameLength = os.hostname().length;
-    
-    if (hostNameLength === 12) {
-      hostname = "𝚁𝙴𝙿𝙻𝙸𝚃";
-    } else if (hostNameLength === 36) {
-      hostname = "𝙷𝙴𝚁𝙾𝙺𝚄";
-    } else if (hostNameLength === 8) {
-      hostname = "𝙺𝙾𝚈𝙴𝙱";
-    } else {
-      hostname = "𝚅𝙿𝚂 || 𝚄𝙽𝙺𝙽𝙾𝚆𝙽";
+        // Search movies
+        const movie = await sinhalaSub();
+        const results = await movie.search(q);
+        const searchResults = results.result?.slice(0, 10) || [];
+
+        if (!searchResults.length) {
+            return await reply(`No results found for: ${q}`);
+        }
+
+        // Send search results
+        const resultsMessage = `📽️ *Search Results for* "${q}":\n\n` +
+            searchResults.map((r, i) => `*${i + 1}.* ${r.title}\n🔗 Link: ${r.link}\n`).join('\n');
+        const sentMsg = await conn.sendMessage(from, { text: resultsMessage }, { quoted: mek });
+
+        // Handle movie selection
+        conn.addReplyTracker(sentMsg.key.id, async (mek, messageType) => {
+            const selectedNumber = parseInt(messageType.trim());
+            if (isNaN(selectedNumber) || selectedNumber <= 0 || selectedNumber > searchResults.length) {
+                return await reply('Invalid selection. Please reply with a valid number.');
+            }
+
+            const selectedMovie = searchResults[selectedNumber - 1];
+            const apiUrl = `https://api-site-2.vercel.app/api/sinhalasub/movie?url=${encodeURIComponent(selectedMovie.link)}`;
+            let movieData;
+            try {
+                const response = await fetchWithRetry(apiUrl);
+                movieData = response.data.result;
+            } catch (error) {
+                console.error('Error fetching movie details:', error.message);
+                return await reply(`*Error fetching movie details: ${error.message || 'Please try again.'}*`);
+            }
+
+            // Send movie details
+            const detailsMessage = `*🎥 Movie Details: ${movieData.title}*\n\n` +
+                `*📅 Released Date:* ${movieData.date || 'N/A'}\n` +
+                `*🌎 Country:* ${movieData.country || 'N/A'}\n` +
+                `*💃 IMDb Rating:* ${movieData.imdb || 'N/A'}\n` +
+                `*⏰ Runtime:* ${movieData.runtime || 'N/A'}\n` +
+                `*💁‍♂️ Subtitle By:* ${movieData.subtitle || 'N/A'}\n` +
+                `*🎭 Genres:* ${movieData.genre || '.NEW, Action, Drama'}\n\n` +
+                `*📩 Reply with 'download' to see available download links.*`;
+            const detailsMsg = await conn.sendMessage(from, { text: detailsMessage }, { quoted: mek });
+
+            // Handle download request
+            conn.addReplyTracker(detailsMsg.key.id, async (mek, dlMessageType) => {
+                if (dlMessageType.trim().toLowerCase() !== 'download') {
+                    return await reply("Please reply with 'download' to see available download links.");
+                }
+
+                const pixelDrainLinks = movieData.dl_links || [];
+                if (!pixelDrainLinks.length) {
+                    return await reply('No PixelDrain links found.');
+                }
+
+                // Send download links
+                const downloadMessage = `🎥 *${movieData.title}*\n\n` +
+                    `*Available PixelDrain Download Links:*\n` +
+                    pixelDrainLinks.map((link, i) => `*${i + 1}.* ${link.quality} - ${link.size}\n`).join('\n');
+                const pixelDrainMsg = await conn.sendMessage(from, { text: downloadMessage }, { quoted: mek });
+
+                // Handle quality selection
+                conn.addReplyTracker(pixelDrainMsg.key.id, async (mek, pdMessageType) => {
+                    const qualityNumber = parseInt(pdMessageType.trim());
+                    if (isNaN(qualityNumber) || qualityNumber <= 0 || qualityNumber > pixelDrainLinks.length) {
+                        return await reply('Invalid selection. Please reply with a valid number.');
+                    }
+
+                    const selectedLink = pixelDrainLinks[qualityNumber - 1];
+                    const fileId = selectedLink.link.split('/').pop();
+                    const directDownloadUrl = `https://pixeldrain.com/api/file/${fileId}`;
+                    const sendto = isMe ? process.env.MOVIE_JID || from : from;
+
+                    await conn.sendMessage(from, { react: { text: '⬇️', key: pixelDrainMsg.key } });
+
+                    // Construct caption
+                    const caption = `*☘️ 𝗧ɪᴛʟᴇ ➮* *${movieData.title}*\n\n` +
+                        `*📅 𝗥ᴇʟᴇᴀꜱᴇᴅ ᴅᴀᴛᴇ ➮* ${movieData.date || 'N/A'}\n` +
+                        `*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* ${movieData.country || 'N/A'}\n` +
+                        `*💃 𝗥ᴀᴛɪɴɢ ➮* ${movieData.imdb || 'N/A'}\n` +
+                        `*⏰ �_Rᴜɴᴛɪᴍᴇ ➮* ${movieData.runtime || 'N/A'}\n` +
+                        `*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* ${movieData.subtitle || 'N/A'}\n` +
+                        `*🎭 �_Gᴇɴᴀʀᴇꜱ ➮* ${movieData.genre || '.NEW, Action, Drama'}\n\n` +
+                        `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
+
+                    try {
+                        await conn.sendMessage(sendto, {
+                            document: { url: directDownloadUrl },
+                            mimetype: "video/mp4",
+                            fileName: `${movieData.title} - ${selectedLink.quality}.mp4`,
+                            caption,
+                            contextInfo: {
+                                mentionedJid: [],
+                                externalAdReply: {
+                                    title: movieData.title,
+                                    body: 'ʜɪʀᴀɴ ᴍᴅ ᴍᴏᴠɪᴇ',
+                                    mediaType: 1,
+                                    sourceUrl: selectedMovie.link,
+                                    thumbnailUrl: movieData.image || 'https://files.catbox.moe/lacqi4.jpg',
+                                    renderLargerThumbnail: true
+                                }
+                            }
+                        }, { quoted: mek });
+                        await conn.sendMessage(from, { react: { text: '✅', key: pixelDrainMsg.key } });
+                    } catch (error) {
+                        console.error('Error sending file:', error.message);
+                        await reply(`*Error sending file: ${error.message || 'File may be too large or unavailable.'} Download here: ${directDownloadUrl}*`);
+                    }
+                });
+            });
+        });
+    } catch (error) {
+        console.error('Error during SinhalaSub search:', error.message);
+        await reply(`*Error: ${error.message || 'An unexpected error occurred.'}*`);
     }
-
-
-                
-    const films = await getMovieDetailsAndDownloadLinks(q);
-    
-    if (films.length === 0) {
-      return reply('❌ No movies found for your query.');
-    }
-
-
-let filmListMessage = "📢 *\`DTZ  X\`*\n\n🎥 *Movie Search Results*\n*Reply Number ⤵️*\n\n";
-const numberEmojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"];
-
-films.forEach((film, index) => {
-  let adjustedIndex = index + 1; 
-  let emojiIndex = adjustedIndex.toString().split("").map(num => numberEmojis[num]).join("");
-  filmListMessage += `${emojiIndex} *${film.filmName}*\n\n`;
 });
 
-
-    const sentMessage = await conn.sendMessage(from, { 
-image:{url: "https://i.ibb.co/whLm97q9/Money-Heist-MD-DILALK-d34038e0b4b36fca.jpg"},
-    caption: `${filmListMessage}`,
-     contextInfo: {
-               forwardingScore: 1,
-                isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: '678888',
-          newsletterName: "D T Z  M V  X  BOT 📍",
-          serverMessageId: 999,
+// CineSubz Command
+cmd({
+    pattern: "cinesubz",
+    alias: ["cine"],
+    react: "🎬",
+    category: "movie",
+    desc: "Search and download movies from CineSubz",
+    filename: __filename
+}, async (conn, mek, m, { from, q, reply, isMe }) => {
+    try {
+        // Validate input query
+        if (!q || !/^[a-zA-Z0-9\s]+$/.test(q)) {
+            return await reply('*Please provide a valid movie name to search! (e.g., Avatar)*');
         }
+
+        // Search movies from CineSubz API
+        const searchResponse = await fetchWithRetry(
+            `https://cinesubz-api-zazie.vercel.app/api/search?q=${encodeURIComponent(q)}`
+        );
+        const searchData = searchResponse.data;
+
+        if (!searchData.status || !searchData.result?.data?.length) {
+            return await reply(`*No results found for:* "${q}"`);
         }
-        }, { quoted: mek });
-    
-    await conn.sendMessage(from, { react: { text: "🔢", key: sentMessage.key } });
-            
-        conn.ev.on('messages.upsert', async (msgUpdate) => {
-      const msg = msgUpdate.messages[0];
-      if (!msg.message || !msg.message.extendedTextMessage) return;
 
-      const selectedOption = msg.message.extendedTextMessage.text.trim();
+        const searchResults = searchData.result.data.slice(0, 10);
+        const resultsMessage = `*𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐂𝐈𝐍𝐄𝐒𝐔𝐁𝐙 𝐒𝐄𝐀𝐑𝐂𝐇*\n\n🎥 *Search Results for* "${q}":\n\n` +
+            searchResults.map((r, i) => `*${i + 1}.* ${r.title} (${r.year})\n🔗 Link: ${r.link}\n`).join('\n');
 
-      if (msg.message.extendedTextMessage.contextInfo && msg.message.extendedTextMessage.contextInfo.stanzaId === sentMessage.key.id) {
-        const selectedIndex = parseInt(selectedOption.trim()) - 1;
+        await sleep(2000); // Delay for better UX
+        const sentMsg = await conn.sendMessage(from, { text: resultsMessage }, { quoted: mek });
 
-        if (selectedIndex >= 0 && selectedIndex < films.length) {
+        // Handle movie selection
+        conn.addReplyTracker(sentMsg.key.id, async (mek, messageType) => {
+            const selectedNumber = parseInt(messageType.trim());
+            if (isNaN(selectedNumber) || selectedNumber <= 0 || selectedNumber > searchResults.length) {
+                return await reply('Invalid selection. Please reply with a valid number.');
+            }
 
-  await conn.sendMessage(from, { react: { text: "🔄", key: msg.key } });
-          
+            const selectedMovie = searchResults[selectedNumber - 1];
+            let movieData;
+            try {
+                const movieResponse = await fetchWithRetry(
+                    `https://cinesubz-api-zazie.vercel.app/api/movie?url=${encodeURIComponent(selectedMovie.link)}`
+                );
+                movieData = movieResponse.data;
+            } catch (error) {
+                console.error('Error fetching movie details:', error.message);
+                return await reply(`*Error fetching movie details: ${error.message || 'Please try again.'}*`);
+            }
 
-                                                                      const film = films[selectedIndex];
+            if (!movieData.status || !movieData.result.data.dl_links) {
+                return await reply('*Error fetching download links for this movie.*');
+            }
 
-let filmDetailsMessage = `📢 *\`DTZ MOVIE X \`*\n\n* *🎬 ${film.filmName}* (${film.year})\n`;
-filmDetailsMessage += `* *⭐ IMDb: ${film.imdb}*\n`;
-filmDetailsMessage += `* *📝 ${film.description}*\n\n`;
+            const { title, imdbRate, image, date, country, duration, dl_links } = movieData.result.data;
 
-const filteredDownloadLinks = film.downloadLinks.filter(dl => !dl.quality.includes("Telegram"));
+            // Send movie details
+            const detailsMessage = `*🎥 Movie Details: ${title}*\n\n` +
+                `*📅 Released Date:* ${date || 'N/A'}\n` +
+                `*🌎 Country:* ${country || 'N/A'}\n` +
+                `*💃 IMDb Rating:* ${imdbRate || 'N/A'}\n` +
+                `*⏰ Runtime:* ${duration || 'N/A'}\n` +
+                `*💁‍♂️ Subtitle By:* ${movieData.result.data.subtitle || 'N/A'}\n` +
+                `*🎭 Genres:* ${movieData.result.data.genre || '.NEW, Action, Drama'}\n\n` +
+                `*📩 Reply with 'download' to see available download links.*`;
+            const detailsMsg = await conn.sendMessage(from, { text: detailsMessage }, { quoted: mek });
 
-let jsonResponses = []; 
+            // Handle download request
+            conn.addReplyTracker(detailsMsg.key.id, async (mek, dlMessageType) => {
+                if (dlMessageType.trim().toLowerCase() !== 'download') {
+                    return await reply("Please reply with 'download' to see available download links.");
+                }
 
-if (filteredDownloadLinks.length > 0) {
-    filmDetailsMessage += `*Reply Number ⤵️*\n\n`;
+                if (!dl_links.length) {
+                    return await reply('*No download links available for this movie.*');
+                }
 
-    const numberEmojis1 = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"];
+                // Send download links
+                const downloadMessage = `🎥 *${title}*\n\n` +
+                    `*Available Download Links:*\n` +
+                    dl_links.map((link, i) => `*${i + 1}.* ${link.quality} - ${link.size}\n`).join('\n');
+                const sentDownloadMsg = await conn.sendMessage(from, { text: downloadMessage }, { quoted: mek });
 
-    for (const [index, dl] of filteredDownloadLinks.entries()) {
-        const emojiIndex1 = (index + 1).toString().split("").map(num => numberEmojis1[num]).join(""); 
+                // Handle quality selection
+                conn.addReplyTracker(sentDownloadMsg.key.id, async (mek, downloadMessageType) => {
+                    const selectedQuality = parseInt(downloadMessageType.trim());
+                    if (isNaN(selectedQuality) || selectedQuality <= 0 || selectedQuality > dl_links.length) {
+                        return await reply('Invalid selection. Please reply with a valid number.');
+                    }
 
-        const modifiedLink = await scrapeModifiedLink(dl.link);
-        const jsonResponse = await fetchJsonData({ direct: true }, modifiedLink);
+                    const selectedLink = dl_links[selectedQuality - 1];
+                    let movieLinkData;
+                    try {
+                        const movieLinkResponse = await fetchWithRetry(
+                            `https://cinesubz-api-zazie.vercel.app/api/links?url=${encodeURIComponent(selectedLink.link)}`
+                        );
+                        movieLinkData = movieLinkResponse.data;
+                    } catch (error) {
+                        console.error('Error fetching download link:', error.message);
+                        return await reply(`*Error fetching download link: ${error.message || 'Please try again.'}*`);
+                    }
 
-jsonResponses.push(jsonResponse);
+                    const downloadUrl = movieLinkData.result.direct;
+                    const sendto = isMe ? process.env.MOVIE_JID || from : from;
 
-        if (!jsonResponse.url) continue; 
-        let cleanedQuality = dl.quality.replace(/(SD|HD|BluRay|FHD|WEBRip|WEB-DL|WEBDL|Direct)/gi, "").trim(); 
+                    await conn.sendMessage(from, { react: { text: '⬆️', key: sentDownloadMsg.key } });
 
-        filmDetailsMessage += `${emojiIndex1} *${cleanedQuality} - ${jsonResponse.fileSize}*\n`;
-      
-     }
-} 
+                    // Construct caption
+                    const caption = `*☘️ 𝗧ɪᴛʟᴇ ➮* *${title}*\n\n` +
+                        `*📅 𝗥ᴇʟᴇᴀꜱᴇᴅ ᴅᴀᴛᴇ ➮* ${date || 'N/A'}\n` +
+                        `*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* ${country || 'N/A'}\n` +
+                        `*💃 𝗥ᴀᴛɪɴɢ ➮* ${imdbRate || 'N/A'}\n` +
+                        `*⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* ${duration || 'N/A'}\n` +
+                        `*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* ${movieData.result.data.subtitle || 'N/A'}\n` +
+                        `*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* ${movieData.result.data.genre || '.NEW, Action, Drama'}\n\n` +
+                        `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
 
-const sentMessage1 = await conn.sendMessage(from, { 
-image:{url: `${film.imageUrl}`},
-    caption: `${filmDetailsMessage}`,
-     contextInfo: {
-               forwardingScore: 1,
-                isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363398681287064@newsletter',
-          newsletterName: "D T Z  M V  X  BOT 📍",
-          serverMessageId: 999,
-        }
-        }
-        }, { quoted: msg });
-
-await conn.sendMessage(from, { react: { text: "🔢", key: sentMessage1.key } });
-
-
-
-conn.ev.on('messages.upsert', async (msgUpdate) => {
-    const msg1 = msgUpdate.messages[0];
-    if (!msg1.message || !msg1.message.extendedTextMessage) return;
-
-    const selectedOption = msg1.message.extendedTextMessage.text.trim();
-
-    if (msg1.message.extendedTextMessage.contextInfo && msg1.message.extendedTextMessage.contextInfo.stanzaId === sentMessage1.key.id) {
-        const selectedIndex1 = parseInt(selectedOption) - 1;
-
-        if (selectedIndex1 >= 0 && selectedIndex1 < jsonResponses.length) {
-
-await conn.sendMessage(from, { react: { text: "⬇️", key: msg1.key } });
-
-           
-  if (!jsonResponses[selectedIndex1].url) {
-    await conn.sendMessage(from, { react: { text: "❌", key: msg1.key } });
-    await conn.sendMessage(from, { text: "❌ Invalid selection. Please select a valid number." }, { quoted: msg1 });
-    return;
-}          
-             
-
-if (["𝙷𝙴𝚁𝙾𝙺𝚄", "𝙺𝙾𝚈𝙴𝙱"].includes(hostname)) {
-    await conn.sendMessage(from, { react: { text: "🚫", key: msg1.key } });
-    await conn.sendMessage(from, { text: `🚫 *Cannot send large files on ${hostname}.*\n\n⚠️ This platform has restrictions on sending large media files. Please use a VPS or a suitable server.` }, { quoted: msg1 });
-    return;
-}
-
-
-let fileSizeMB = parseFloat(jsonResponses[selectedIndex1].fileSize) * (jsonResponses[selectedIndex1].fileSize.includes("GB") ? 1024 : 1);
-
-if (fileSizeMB > 2000) {
-   await conn.sendMessage(from, { react: { text: "🚫", key: msg1.key } });
-     await conn.sendMessage(from, { text: `🚫 *Cannot send files larger than 2GB.*\n\n⚠️ WhatsApp supports only up to 2GB for file uploads. Try Low Quality` }, { quoted: msg1 });
-    return;
-}
-
-
-await conn.sendMessage(from, { 
-    document: { url: `${jsonResponses[selectedIndex1].url}` }, 
-    mimetype: "video/mp4", 
-    fileName: `${film.filmName}.mp4`,
-    caption: `*🎥 ${film.filmName}*
-
-* *⏳ Year ${film.year}*
-* *⭐ Rating ${film.imdb}*
-* *📦 Size ${jsonResponses[selectedIndex1].fileSize}*
-
-> 📝 *${film.description}*` 
-}, { quoted: msg1 });
-
-await conn.sendMessage(from, { react: { text: "✅", key: msg1.key } });
-
-        } else {
-            await conn.sendMessage(from, { react: { text: "❌", key: msg1.key } });
-            await conn.sendMessage(from, { text: "❌ Invalid selection. Please select a valid number." }, { quoted: msg1 });
-        }
+                    try {
+                        await conn.sendMessage(sendto, {
+                            document: { url: downloadUrl },
+                            mimetype: "video/mp4",
+                            fileName: `${title} - ${selectedLink.quality}.mp4`,
+                            caption,
+                            contextInfo: {
+                                mentionedJid: [],
+                                groupMentions: [],
+                                forwardingScore: 999,
+                                isForwarded: true,
+                                forwardedNewsletterMessageInfo: {
+                                    newsletterJid: '120363401446603948@newsletter',
+                                    newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 💚',
+                                    serverMessageId: 999
+                                },
+                                externalAdReply: {
+                                    title,
+                                    body: 'ʜɪʀᴀɴ ᴍᴅ ᴍᴏᴠɪᴇ',
+                                    mediaType: 1,
+                                    sourceUrl: selectedMovie.link,
+                                    thumbnailUrl: image || 'https://files.catbox.moe/lacqi4.jpg',
+                                    renderLargerThumbnail: true,
+                                    showAdAttribution: true
+                                }
+                            }
+                        }, { quoted: mek });
+                        await conn.sendMessage(from, { react: { text: '✅', key: sentDownloadMsg.key } });
+                    } catch (error) {
+                        console.error('Error sending file:', error.message);
+                        await reply(`*Error sending file: ${error.message || 'File may be too large or unavailable.'} Download here: ${downloadUrl}*`);
+                    }
+                });
+            });
+        });
+    } catch (error) {
+        console.error('Error during CineSubz search:', error.message);
+        await reply(`*Error: ${error.message || 'An unexpected error occurred.'}*`);
     }
-});                                                                                                                                   } else {
-            await conn.sendMessage(from, { react: { text: "❌", key: msg.key } });
-            await conn.sendMessage(from, { text: "❌ Invalid selection. Please select a valid number." }, { quoted: msg });
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error(error);
-    reply('⚠️ An error occurred while searching for films.');
-  }
 });
