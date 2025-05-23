@@ -1,4 +1,5 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, jidNormalizedUser, getContentType, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
+
 const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson } = require('./lib/functions');
 const fs = require('fs');
 const P = require('pino');
@@ -13,6 +14,20 @@ const prefix = '.';
 const ownerNumber = ['94768698018'];
 
 let replyMap = new Map();
+
+// Add reply tracker method to conn later after connection
+
+if (!fs.existsSync(__dirname + '/auth_info_baileys/creds.json')) {
+  if (!config.SESSION_ID) return console.log('Please add your session to SESSION_ID env !!');
+  const sessdata = config.SESSION_ID;
+  const filer = File.fromURL(`https://mega.nz/file/${sessdata}`);
+  filer.download((err, data) => {
+    if (err) throw err;
+    fs.writeFile(__dirname + '/auth_info_baileys/creds.json', data, () => {
+      console.log("Session downloaded ✅");
+    });
+  });
+}
 
 const express = require("express");
 const app = express();
@@ -32,20 +47,24 @@ async function connectToWA() {
     version
   });
 
-  // === FIX: addReplyTracker for plugins like .cinesubz ===
+  // Add reply tracker method here:
   conn.addReplyTracker = (msgId, callback) => {
     replyMap.set(msgId, { callback });
-    setTimeout(() => replyMap.delete(msgId), 5 * 60 * 1000); // auto remove in 5 minutes
+
+    // Auto remove after 5 minutes
+    setTimeout(() => {
+      replyMap.delete(msgId);
+    }, 5 * 60 * 1000);
   };
 
   conn.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
-      if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+      if (lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut) {
         connectToWA();
       }
     } else if (connection === 'open') {
-      console.log('😼 Installing...');
+      console.log('😼 Installing... ');
       const path = require('path');
       fs.readdirSync("./plugins/").forEach((plugin) => {
         if (path.extname(plugin).toLowerCase() == ".js") {
@@ -56,6 +75,7 @@ async function connectToWA() {
       console.log('Bot connected to whatsapp ✅');
 
       const up = `╭━━━〔 HIRAN  MD  V4 〕━━━╮
+
 ┃
 ┃ 🤖 HIRAN MD OFFICIAL
 ┃ 𝙋𝙤𝙬𝙚𝙧𝙛𝙪𝙡 𝙈𝙪𝙡𝙩𝙞𝙙𝙚𝙫𝙞𝙘𝙚 𝘽𝙤𝙩
@@ -121,11 +141,13 @@ async function connectToWA() {
       conn.sendMessage(from, { text: teks }, { quoted: mek });
     };
 
+    // --- New stanzaId reply handling ---
     const stanzaId = mek.message?.extendedTextMessage?.contextInfo?.stanzaId || mek.key.id;
     if (replyMap.has(stanzaId)) {
       const { callback } = replyMap.get(stanzaId);
       return callback(m, (mek.message?.conversation || mek.message?.extendedTextMessage?.text || '').trim());
     }
+    // --- end stanzaId reply handling ---
 
     const events = require('./command');
     const cmdName = isCmd ? body.slice(1).trim().split(" ")[0].toLowerCase() : false;
@@ -156,6 +178,7 @@ async function connectToWA() {
         });
       }
     });
+
   });
 }
 
