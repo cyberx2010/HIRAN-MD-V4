@@ -43,6 +43,7 @@
     "moment-timezone": "latest",
     "form-data": "^4.0.0",
     "seedr": "^1.1.2",
-    "mrnima-moviedl": "^1.0.0"
+    "mrnima-moviedl": "^1.0.0",
+    "dotenv": "^16.5.0"
   }
 }
