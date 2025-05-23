@@ -77,10 +77,10 @@ return await messageHandler.sendMessage(from, {
         });
 
         message += options;
-        message += `\n\n> ⚜️ _ʀᴇᴄᴏᴅᴇᴅ ʙʏ_ *- :* *_𝐇𝐢𝐫𝐚𝐧𝐲𝐚_𝐒𝐚𝐭𝐡𝐬𝐚𝐫𝐚*`;
+        message += `\n\n> ⚜️ _ʀᴇᴄᴏᴅᴇᴅ ʙʏ_ *- :* *_𝐇𝐢𝐫𝐚𝐧𝐲𝐚_𝐒𝐚𝐭𝐡𝐬𝐚𝐫𝐚_*`;
 
         const sentMessage = await messageHandler.sendMessage(from, {
-            image: { url: `https://files.catbox.moe/lacqi4.jpg` },
+            image: { url: `https://files.catbox.moe/rbskon.jpg` },
             caption: message,          
         }, { quoted: quotedMessage });
 
@@ -169,10 +169,10 @@ cmd({
         });
         
         message += options;
-        message += `\n\n> ⚜️ _ʀᴇᴄᴏᴅᴇᴅ ʙʏ_ *- :* *_𝐇𝐢𝐫𝐚𝐧𝐲𝐚_𝐒𝐚𝐭𝐡𝐬𝐚𝐫𝐚*`;
+        message += `\n\n> ⚜️ _ʀᴇᴄᴏᴅᴇᴅ ʙʏ_ *- :* *_𝐇𝐢𝐫𝐚𝐧𝐲𝐚_𝐒𝐚𝐭𝐡𝐬𝐚𝐫𝐚_*`;
 
         const sentMessage = await messageHandler.sendMessage(from, {
-            image: { url: `https://files.catbox.moe/lacqi4.jpg` },
+            image: { url: `https://files.catbox.moe/rbskon.jpg` },
             caption: message
         }, { quoted: quotedMessage });
 
@@ -211,7 +211,7 @@ cmd({
 
                     await messageHandler.sendMessage(from, {
                         video: { url: videoUrl },
-                        caption: `${selectedVideo.title}\n\n> ⚜️ _𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝_ *- :* *_SL NETHU MAX_ ᵀᴹ*`
+                        caption: `${selectedVideo.title}\n\n> ⚜️ _ʀᴇᴄᴏᴅᴇᴅ ʙʏ_ *- :* *_𝐇𝐢𝐫𝐚𝐧𝐲𝐚_𝐒𝐚𝐭𝐡𝐬𝐚𝐫𝐚_*`
                     });
 
                 } catch (err) {
@@ -294,7 +294,7 @@ async (conn, mek, m, { from, q, quoted, reply }) => {
         let xv_info = await fetchJson(`https://www.dark-yasiya-api.site/download/xvideo?url=${q}`);
         if (!xv_info.result) return reply('*Error retrieving video details!!*');
 
-        const msg = `*🔞 QUEEN NETHU XVIDEO DOWNLOADER 🔞*
+        const msg = `*🔞 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐗𝐕𝐈𝐃𝐄𝐎 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐄𝐑 🔞*
      
 ☘️ *Title:* ${xv_info.result.title}
 📈 *Views:* ${xv_info.result.views}
