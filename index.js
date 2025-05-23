@@ -84,7 +84,7 @@ events.commands.map(async (command) => {
 
 app.get("/", (req, res) => { res.send("hey, bot started✅"); });
 
-app.listen(port, () => console.log(Server listening on port http://localhost:${port}));
+app.listen(port, () => console.log(`Server listening on port http://localhost:${port}`));
 
 setTimeout(() => { connectToWA(); }, 4000);
 
