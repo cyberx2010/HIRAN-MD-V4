@@ -69,7 +69,7 @@ return await messageHandler.sendMessage(from, {
             text: "⭕ *I Couldn't Find Anything 🙄*" 
         }, { quoted: quotedMessage });
 
-        let message = `*🔞 QUEEN NETHU XNXX DOWNLOADER 🔞*\n\n`;
+        let message = `*🔞 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐗𝐍𝐗𝐗 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐄𝐑 🔞*\n\n`;
         let options = ""; 
 
         limitedData.forEach((v, index) => {
@@ -77,10 +77,10 @@ return await messageHandler.sendMessage(from, {
         });
 
         message += options;
-        message += `\n\n> ⚜️ _𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝_ *- :* *_SL NETHU MAX_ ᵀᴹ*`;
+        message += `\n\n> ⚜️ _ʀᴇᴄᴏᴅᴇᴅ ʙʏ_ *- :* *_𝐇𝐢𝐫𝐚𝐧𝐲𝐚_𝐒𝐚𝐭𝐡𝐬𝐚𝐫𝐚*`;
 
         const sentMessage = await messageHandler.sendMessage(from, {
-            image: { url: `https://i.ibb.co/ntvzPr8/s-Wuxk4b-KHr.jpg` },
+            image: { url: `https://files.catbox.moe/lacqi4.jpg` },
             caption: message,          
         }, { quoted: quotedMessage });
 
@@ -119,7 +119,7 @@ return await messageHandler.sendMessage(from, {
 
                     await messageHandler.sendMessage(from, {
                         video: { url: videoUrl },
-                        caption: `${selectedVideo.title}\n\n> ⚜️ _𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝_ *- :* *_SL NETHU MAX_ ᵀᴹ*`,
+                        caption: `${selectedVideo.title}\n\n> 𝐓𝐇𝐀𝐓𝐒 𝐁𝐑𝐎𝐔𝐆𝐇𝐓 𝐅𝐎𝐑 𝐘𝐎𝐔 𝐁𝐘 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃`,
                }, { quoted: quotedMessage });         
 
                 } catch (err) {
@@ -161,7 +161,7 @@ cmd({
         
         if (data.length < 1) return await messageHandler.sendMessage(from, { text: "⭕ *I Couldn't Find Anything 🙄*" }, { quoted: quotedMessage });
 
-        let message = `*🔞 QUEEN NETHU MD XVIDEO DOWNLOADER 🔞*\n\n`;
+        let message = `*🔞 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐗𝐕𝐈𝐃𝐄𝐎 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐄𝐑 🔞*\n\n`;
         let options = '';
 
         data.forEach((v, index) => {
@@ -169,10 +169,10 @@ cmd({
         });
         
         message += options;
-        message += `> ⚜️ _𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝_ *- :* *_SL NETHU MAX_ ᵀᴹ*\n\n`;
+        message += `\n\n> ⚜️ _ʀᴇᴄᴏᴅᴇᴅ ʙʏ_ *- :* *_𝐇𝐢𝐫𝐚𝐧𝐲𝐚_𝐒𝐚𝐭𝐡𝐬𝐚𝐫𝐚*`;
 
         const sentMessage = await messageHandler.sendMessage(from, {
-            image: { url: `https://i.ibb.co/ntvzPr8/s-Wuxk4b-KHr.jpg` },
+            image: { url: `https://files.catbox.moe/lacqi4.jpg` },
             caption: message
         }, { quoted: quotedMessage });
 
