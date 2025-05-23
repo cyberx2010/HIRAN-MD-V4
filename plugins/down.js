@@ -52,7 +52,7 @@ cmd({
     alias: ["xnxxdl"],
     use: '.xnxx <query>',
     react: "🔞",
-    desc: xn,
+    desc: "xn",
     category: "download",
     filename: __filename
 }, async (messageHandler, context, quotedMessage, { from, q, reply }) => {
@@ -146,7 +146,7 @@ cmd({
     alias: ["xvideo"],
     use: '.xvid <query>',
     react: "🔞",
-    desc: xv,
+    desc: "xv",
     category: "download",
     filename: __filename
 }, async (messageHandler, context, quotedMessage, { from, q, reply }) => {
@@ -282,7 +282,7 @@ cmd({
     pattern: "xv",
     alias: ["dlxv", "xvdl"],
     react: '🔞',
-    desc: xvu,
+    desc: "xvu",
     category: "download",
     use: '.xv <xvideos link>',
     filename: __filename
