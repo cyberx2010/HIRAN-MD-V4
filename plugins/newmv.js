@@ -1,115 +1,144 @@
-const { sinhalaSub } = require("mrnima-moviedl");
-const { cmd } = require("../command"); // Ensure cmd is correctly exported
-const axios = require("axios"); // Add axios import
+const axios = require("axios");
+const { cmd, commands } = require('../command');
+const config = require('../config');
+const { fetchJson } = require('../lib/functions');
 
-});
 cmd({
   pattern: "sinhalasub",
-  alias: ["movie"],
-  react: '📑',
-  category: "download",
-  desc: "Search movies on sinhalasub and get download links",
+  alias: ["ssub"],
+  desc: "Search Sinhala Subtitles",
+  category: "movie",
+  use: ".sinhalasub 2024",
   filename: __filename
-}, async (client, message, msgInfo, { from, q, reply }) => {
+},
+async (conn, mek, m, { from, q, reply, prefix }) => {
   try {
-    if (!q) {
-      return await reply("*Please provide a search query! (e.g., Deadpool)*");
-    }
-    
-    const sinhalasubInstance = await sinhalaSub();
-    const searchResults = await sinhalasubInstance.search(q);
-    const limitedResults = searchResults.result.slice(0, 10);
+    if (!q) return reply("text එකක් දියන් යකූ (e.g. `.ssub 2024`)");
 
-    if (!limitedResults.length) {
-      return await reply("No results found for: " + q);
+    const res = await fetchJson(`https://nethu-api-ashy.vercel.app/movie/sinhalasub/search?text=${encodeURIComponent(q)}`);
+
+    if (!res.result || !res.result.data || res.result.data.length === 0) {
+      return reply("API call කරන්නෑ. No results found for: " + q);
     }
 
-    let responseText = `📽️ *Search Results for* "${q}":\n\n`;
-    limitedResults.forEach((result, index) => {
-      responseText += `*${index + 1}.* ${result.title}\n🔗 Link: ${result.link}\n\n`;
-    });
+    const items = res.result.data.slice(0, 10);
 
-    const sentMessage = await client.sendMessage(from, { text: responseText }, { quoted: msgInfo });
-    const sentMessageId = sentMessage.key.id;
+    const sections = [{
+      title: "📽️ Search Results",
+      rows: items.map((item, i) => ({
+        title: item.title,
+        rowId: `${prefix}sub_search ${item.link}`,
+        description: item.date || "No date available"
+      }))
+    }];
 
-    client.ev.on("messages.upsert", async event => {
-      const newMessage = event.messages[0];
-      if (!newMessage.message) return;
+    const listMessage = {
+      text: `*Sinhala Subtitle Search Results for:* ${q}`,
+      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ԋιɾαɳ ɱԃ ʋ3 🔒🪄",
+      title: "Select a Movie",
+      buttonText: "📋 Select Movie",
+      sections,
+      image: { url: "https://i.ibb.co/1YPWpS3H/9882.jpg" }
+    };
 
-      const userMessage = newMessage.message.conversation || newMessage.message.extendedTextMessage?.text;
-      const isReplyToSearch = newMessage.message.extendedTextMessage && newMessage.message.extendedTextMessage.contextInfo.stanzaId === sentMessageId;
+    await conn.sendMessage(from, listMessage, { quoted: mek });
 
-      if (isReplyToSearch) {
-        const selectedNumber = parseInt(userMessage.trim());
-        if (!isNaN(selectedNumber) && selectedNumber > 0 && selectedNumber <= limitedResults.length) {
-          const selectedMovie = limitedResults[selectedNumber - 1];
-          const apiUrl = `https://suhas-bro-api.vercel.app/movie/sinhalasub/movie?url=${encodeURIComponent(selectedMovie.link)}`;
+  } catch (e) {
+    console.error("Error in sinhalasub command:", e.message, e.stack);
+    await reply(`*Error:* ${e.message || "Unknown error occurred"}`);
+  }
+});
 
-          try {
-            const movieDetails = await axios.get(apiUrl);
-            const downloadLinks = movieDetails.data.result.dl_links || [];
+cmd({
+  pattern: "sub_search",
+  react: "🔎",
+  dontAddCommandList: true,
+  filename: __filename
+},
+async (conn, mek, m, { from, q, reply, prefix }) => {
+  try {
+    if (!q) return reply("Link එක දියන් යකූ!");
 
-            if (!downloadLinks.length) {
-              return await reply("No PixelDrain links found.");
-            }
+    const res = await fetchJson(`https://nethu-api-ashy.vercel.app/movie/sinhalasub/movie?url=${encodeURIComponent(q)}`);
+    const movieData = res?.result?.data;
+    if (!movieData) return reply("API එක call කරන්න බෑ. No data found.");
 
-            let downloadText = `🎥 *${movieDetails.data.result.title}*\n\n*Available PixelDrain Download Links:*\n`;
-            downloadLinks.forEach((link, index) => {
-              downloadText += `*${index + 1}.* ${link.quality} - ${link.size}\n🔗 Link: ${link.link}\n\n`;
-            });
+    const downloadMessage = `
+*☘️ 𝗧ɪᴛʟᴇ ➮* _${movieData.title || "Not Available"}_
+*📅 𝗥ᴇʟᴇꜱᴇᴅ ᴅᴀᴛᴇ ➮* _${movieData.date || "N/A"}_
+*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* _${movieData.country || "N/A"}_
+*💃 𝗥ᴀᴛɪɴɢ ➮* _${movieData.tmdbRate || movieData.imdb || "N/A"}_
+*⏰ �_Rᴜɴᴛɪᴍᴇ ➮* _${movieData.runtime || "N/A"}_
+*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* _${movieData.subtitle_author || movieData.subtitle || "N/A"}_
+*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* _${movieData.category?.join(", ") || movieData.genre || ".NEW, Action, Drama"}_
 
-            const downloadMessage = await client.sendMessage(from, { text: downloadText }, { quoted: newMessage });
-            const downloadMessageId = downloadMessage.key.id;
+> ⚜️ 𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝  -  ԋιɾαɳ ɱԃ ʋ3  𝐁𝐘  𝐇𝐈𝐑𝐀𝐍𝐘𝐀  𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀  
+`.trim();
 
-            client.ev.on('messages.upsert', async event => {
-              const downloadReply = event.messages[0];
-              if (!downloadReply.message) return;
+    const sections = [];
 
-              const downloadReplyText = downloadReply.message.conversation || downloadReply.message.extendedTextMessage?.text;
-              const isReplyToDownload = downloadReply.message.extendedTextMessage && downloadReply.message.extendedTextMessage.contextInfo.stanzaId === downloadMessageId;
+    if (Array.isArray(movieData.pixeldrain_dl) && movieData.pixeldrain_dl.length > 0) {
+      const pixeldrainRows = movieData.pixeldrain_dl.map(item => ({
+        title: `${item.quality} (${item.size})`,
+        rowId: `${prefix}sub_dl pixeldrain|${item.link}`
+      }));
+      sections.push({
+        title: "📥 PixelDrain",
+        rows: pixeldrainRows
+      });
+    }
 
-              if (isReplyToDownload) {
-                const downloadNumber = parseInt(downloadReplyText.trim());
-                if (!isNaN(downloadNumber) && downloadNumber > 0 && downloadNumber <= downloadLinks.length) {
-                  const selectedLink = downloadLinks[downloadNumber - 1];
-                  const fileId = selectedLink.link.split('/').pop();
-                  const fileUrl = `https://pixeldrain.com/api/file/${fileId}`;
+    if (Array.isArray(movieData.ddl_dl) && movieData.ddl_dl.length > 0) {
+      const ddlRows = movieData.ddl_dl.map(item => ({
+        title: `${item.quality} (${item.size})`,
+        rowId: `${prefix}sub_dl ddl|${item.link}`
+      }));
+      sections.push({
+        title: "📥 DDL",
+        rows: ddlRows
+      });
+    }
 
-                  await client.sendMessage(from, { react: { text: '⬇️', key: msgInfo.key } });
-                  await client.sendMessage(from, {
-                    document: { url: fileUrl },
-                    mimetype: "video/mp4",
-                    fileName: `${movieDetails.data.result.title} - ${selectedLink.quality}.mp4`,
-                    caption: `${movieDetails.data.result.title}\nQuality: ${selectedLink.quality}\nPowered by SinhalaSub`,
-                    contextInfo: {
-                      mentionedJid: [],
-                      externalAdReply: {
-                        title: movieDetails.data.result.title,
-                        body: "Download powered by SinhalaSub",
-                        mediaType: 1,
-                        sourceUrl: selectedMovie.link,
-                        thumbnailUrl: movieDetails.data.result.image
-                      }
-                    }
-                  }, { quoted: downloadReply });
+    if (sections.length === 0) {
+      return reply("No download links available for this movie.");
+    }
 
-                  await client.sendMessage(from, { react: { text: '✅', key: msgInfo.key } });
-                } else {
-                  await reply("Invalid selection. Please reply with a valid number.");
-                }
-              }
-            });
-          } catch (error) {
-            console.error("Error fetching movie details:", error);
-            await reply("An error occurred while fetching movie details. Please try again.");
-          }
-        } else {
-          await reply("Invalid selection. Please reply with a valid number.");
-        }
-      }
-    });
-  } catch (error) {
-    console.error("Error during search:", error);
-    await reply("*An error occurred while searching!*");
+    await conn.sendMessage(from, {
+      text: downloadMessage,
+      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ԋιɾαɳ ɱԃ ʋ3 🔒🪄",
+      title: "Download Links",
+      buttonText: "📥 Select Download",
+      sections,
+      image: { url: movieData.image || "https://i.ibb.co/1YPWpS3H/9882.jpg" }
+    }, { quoted: mek });
+
+  } catch (e) {
+    console.error("Error in sub_search command:", e.message, e.stack);
+    await reply(`*Error:* ${e.message || "Unknown error occurred"}`);
+  }
+});
+
+cmd({
+  pattern: "sub_dl",
+  fromMe: false,
+  desc: "Downloads the subtitle file from selected quality link",
+  type: "download",
+  filename: __filename
+},
+async (conn, mek, m, { q, reply }) => {
+  try {
+    const [type, link] = q.split("|");
+    if (!link) return reply("❌ Link එක දියන් යකූ!");
+
+    await conn.sendMessage(m.chat, {
+      document: { url: link },
+      mimetype: 'video/mp4',
+      fileName: `ԋιɾαɳ-ɱԃ-ʋ3-SINHALASUB-${type.toUpperCase()}.mp4`,
+      caption: `Downloaded ${type} subtitle file`
+    }, { quoted: mek });
+
+  } catch (e) {
+    console.error("Error in sub_dl command:", e.message, e.stack);
+    await reply(`*Error:* ${e.message || "Failed to download subtitle"}`);
   }
 });
