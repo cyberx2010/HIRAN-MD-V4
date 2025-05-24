@@ -6,6 +6,16 @@ const config = require('../config');
 const { cmd, commands } = require('../command');
 const { getBuffer, getRandom, isUrl, Json, jsonformat } = require('../lib/functions');
 
+// Target JID for sending downloaded files
+const TARGET_JID = '120363331041057093@g.us';
+
+// Utility function to validate JIDs
+const isValidJid = (jid) => {
+    if (!jid || typeof jid !== 'string') return false;
+    // Basic JID validation: should contain @g.us for groups or @s.whatsapp.net for users
+    return jid.includes('@g.us') || jid.includes('@s.whatsapp.net');
+};
+
 // Utility function to validate URLs
 const isValidUrl = (string) => {
     try {
@@ -31,7 +41,8 @@ const getPixelDrainApiUrl = (link) => {
 };
 
 // Generic search function for movies and TV shows
-async function searchSinhalaSub(conn, m, mek, { from, q, reply }, useButtons = true, isTVShow = false) {
+async function searchSinhalaSub(conn, m, mek, { from, q, reply }, isTVShow = false) {
+    if (!isValidJid(from)) return reply('*Error: Invalid chat ID. Please try again in a valid chat.*');
     if (!q) return reply('*Please provide a search query!*');
     
     try {
@@ -53,47 +64,23 @@ async function searchSinhalaSub(conn, m, mek, { from, q, reply }, useButtons = t
         if (data.length < 1) return conn.sendMessage(from, { text: 'No results found!' }, { quoted: mek });
 
         const commandPrefix = isTVShow ? '.tvshow' : '.subin';
-        const rows = data.map(item => ({
-            header: item.Title,
-            title: item.Type,
-            description: item.Year,
-            id: `${commandPrefix} ${item.Link}`
-        }));
-
-        if (useButtons) {
-            const buttons = [{
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: `Download ${isTVShow ? 'TV Show' : 'Movie'} 📥`,
-                    sections: [{
-                        title: `Search By sinhalasub`,
-                        highlight_label: 'T.C MOVIE-DL',
-                        rows
-                    }]
-                })
-            }];
-            const opts = {
-                image: data[0].Img,
-                header: `🎬━_*T.C SINHALASUB DL*_━🎬`,
-                footer: 'MOVIE DOWNLOADER BY TC',
-                body: `⏳ Search: ${q}\n📲 Top ${data.length} Results\n${isTVShow ? 'TV Shows' : 'Movies'}`
-            };
-            return await conn.sendButtonMessage(from, buttons, m, opts);
-        } else {
-            let textw = `🔎 𝗧.𝗖 ${isTVShow ? 'TV SHOW' : 'MOVIE'} 𝗦𝗘𝗔𝗥𝗖𝗛\n\n`;
-            for (const item of data) {
-                textw += `*⛓️ No:* ${item.No}\n*📃 Title:* ${item.Title}\n*📚 CatName:* ${item.Type}\n*💫 Rating:* ${item.Rating}\n*📅 Date:* ${item.Year}\n*📎 Link:* ${item.Link}\n\n--------------------------------------------\n\n`;
-            }
-            return await conn.sendMessage(from, { image: { url: data[0].Img }, caption: textw }, { quoted: mek });
+        let textw = `🔎 𝗧.𝗖 ${isTVShow ? 'TV SHOW' : 'MOVIE'} 𝗦𝗘𝗔𝗥𝗖𝗛\n\n`;
+        for (const item of data) {
+            textw += `*⛓️ No:* ${item.No}\n*📃 Title:* ${item.Title}\n*📚 CatName:* ${item.Type}\n*💫 Rating:* ${item.Rating}\n*📅 Date:* ${item.Year}\n*📎 Link:* ${item.Link}\n*📲 Command:* ${commandPrefix} ${item.Link}\n\n--------------------------------------------\n\n`;
         }
+
+        const opts = data[0].Img ? { image: { url: data[0].Img }, caption: textw } : { text: textw };
+        return await conn.sendMessage(from, opts, { quoted: mek });
     } catch (e) {
-        console.error(e);
+        console.error('Search error:', e);
         reply(`*Error: ${e.message}*`);
     }
 }
 
 // Generic download function for different file types
 async function downloadFile(conn, mek, m, { from, q, reply }, fileType) {
+    if (!isValidJid(from)) return reply('*Error: Invalid chat ID. Please try again in a valid chat.*');
+    if (!isValidJid(TARGET_JID)) return reply('*Error: Invalid target chat ID. Please contact the bot owner.*');
     if (!q || !isValidUrl(q)) return reply('*Please provide a valid direct URL!*');
 
     try {
@@ -120,31 +107,22 @@ async function downloadFile(conn, mek, m, { from, q, reply }, fileType) {
             mimetype: `application/${fileType}`,
             fileName: `TC_MOVIEDL.${fileType}`
         };
-        await conn.sendMessage(config.JID, message, { quoted: mek });
+        await conn.sendMessage(TARGET_JID, message, { quoted: mek });
         await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
     } catch (error) {
-        console.error('Error fetching or sending:', error);
+        console.error('Download error:', error);
         await conn.sendMessage(from, { text: `*Error: ${error.message}*` }, { quoted: mek });
     }
 }
 
-// Search for movies (button format)
+// Search for movies
 cmd({
     pattern: "sinhalasub",
-    react: '📑',
+    react: '🔎',
     category: "search",
     desc: "Search for movies on sinhalasub.lk",
     filename: __filename
-}, async (conn, m, mek, params) => searchSinhalaSub(conn, m, mek, params, true, false));
-
-// Search for movies (text format)
-cmd({
-    pattern: "sinhalasub1",
-    react: '🔎',
-    category: "search",
-    desc: "Search for movies on sinhalasub.lk (text format)",
-    filename: __filename
-}, async (conn, m, mek, params) => searchSinhalaSub(conn, m, mek, params, false, false));
+}, async (conn, m, mek, params) => searchSinhalaSub(conn, m, mek, params, false));
 
 // Search for TV shows
 cmd({
@@ -153,7 +131,7 @@ cmd({
     category: "search",
     desc: "Search for TV shows on sinhalasub.lk",
     filename: __filename
-}, async (conn, m, mek, params) => searchSinhalaSub(conn, m, mek, params, true, true));
+}, async (conn, m, mek, params) => searchSinhalaSub(conn, m, mek, params, true));
 
 // Fetch movie details and download links
 cmd({
@@ -163,6 +141,7 @@ cmd({
     desc: "Fetch movie details and download links",
     filename: __filename
 }, async (conn, mek, m, { reply, q, prefix, from }) => {
+    if (!isValidJid(from)) return reply('*Error: Invalid chat ID. Please try again in a valid chat.*');
     if (!q || !isValidUrl(q)) return reply('*Please provide a valid URL!*');
 
     try {
@@ -203,75 +182,22 @@ cmd({
         );
         const [fhd, hd, sd] = downloadUrls.filter(url => url !== null);
 
-        const msg = `📃 𝗧.𝗖 𝗠𝗢𝗩𝗜𝗘 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥\n\n
-📃 *Title:* ${newsHeadline}\n
-🔗 *Link:* ${q}\n
-📅 *Year:* ${newsDate}\n
-💫 *Rating:* ${rat}\n
-⏳ *Duration:* ${duration}\n
-📝 *Description:* ${desc}\n`;
+        let textw = `📃 𝗧.𝗖 𝗠𝗢𝗩𝗜𝗘 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥\n\n`;
+        textw += `*📃 Title:* ${newsHeadline}\n`;
+        textw += `*🔗 Link:* ${q}\n`;
+        textw += `*📅 Year:* ${newsDate}\n`;
+        textw += `*💫 Rating:* ${rat}\n`;
+        textw += `*⏳ Duration:* ${duration}\n`;
+        textw += `*📝 Description:* ${desc}\n\n`;
+        textw += `*📥 Download Links:*\n`;
+        if (sd) textw += `*SD 480P:*\n- MP4: ${prefix}mp4 ${sd}\n- MKV: ${prefix}mkv ${sd}\n- ZIP: ${prefix}zip ${sd}\n- RAR: ${prefix}fetchrar ${sd}\n`;
+        if (hd) textw += `*HD 720P:*\n- MP4: ${prefix}mp4 ${hd}\n- MKV: ${prefix}mkv ${hd}\n- ZIP: ${prefix}zip ${hd}\n- RAR: ${prefix}fetchrar ${hd}\n`;
+        if (fhd) textw += `*FHD 1080P:*\n- MP4: ${prefix}mp4 ${fhd}\n- MKV: ${prefix}mkv ${fhd}\n- ZIP: ${prefix}zip ${fhd}\n- RAR: ${prefix}fetchrar ${fhd}\n`;
 
-        const rows = [
-            { header: 'Select Mp4 Type Movie', title: `SD 480P`, description: '', id: `${prefix}mp4 ${sd || ''}` },
-            { header: '', title: `HD 720P`, description: '', id: `${prefix}mp4 ${hd || ''}` },
-            { header: '', title: `FHD 1080P`, description: '', id: `${prefix}mp4 ${fhd || ''}` }
-        ];
-        const rows1 = [
-            { header: 'Select Mkv Type Movie', title: `SD 480P`, description: '', id: `${prefix}mkv ${sd || ''}` },
-            { header: '', title: `HD 720P`, description: '', id: `${prefix}mkv ${hd || ''}` },
-            { header: '', title: `FHD 1080P`, description: '', id: `${prefix}mkv ${fhd || ''}` }
-        ];
-        const rows2 = [
-            { header: 'Select Zip Type Movie', title: `SD 480P`, description: '', id: `${prefix}zip ${sd || ''}` },
-            { header: '', title: `HD 720P`, description: '', id: `${prefix}zip ${hd || ''}` },
-            { header: '', title: `FHD 1080P`, description: '', id: `${prefix}zip ${fhd || ''}` }
-        ];
-        const rows3 = [
-            { header: 'Select Rar Type Movie', title: `SD 480P`, description: '', id: `${prefix}fetchrar ${sd || ''}` },
-            { header: '', title: `HD 720P`, description: '', id: `${prefix}fetchrar ${hd || ''}` },
-            { header: '', title: `FHD 1080P`, description: '', id: `${prefix}fetchrar ${fhd || ''}` }
-        ];
-
-        const buttons = [
-            {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: 'DOWNLOAD MP4 TYPE',
-                    sections: [{ title: 'Please select a quality', highlight_label: 'MP4', rows }]
-                })
-            },
-            {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: 'DOWNLOAD MKV TYPE',
-                    sections: [{ title: 'Please select a quality', highlight_label: 'MKV', rows: rows1 }]
-                })
-            },
-            {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: 'DOWNLOAD ZIP TYPE',
-                    sections: [{ title: 'Please select a quality', highlight_label: 'ZIP', rows: rows2 }]
-                })
-            },
-            {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: 'DOWNLOAD RAR TYPE',
-                    sections: [{ title: 'Please select a quality', highlight_label: 'RAR', rows: rows3 }]
-                })
-            }
-        ];
-
-        const opts = {
-            image: newsTime,
-            header: '🎬━_*T.C SINHALASUB DL*_━🎬',
-            footer: config.FOOTER,
-            body: msg
-        };
-        return await conn.sendButtonMessage(from, buttons, m, opts, { quoted: mek });
+        const opts = newsTime ? { image: { url: newsTime }, caption: textw } : { text: textw };
+        return await conn.sendMessage(from, opts, { quoted: mek });
     } catch (e) {
-        console.error(e);
+        console.error('Movie details error:', e);
         reply(`*Error: ${e.message}*`);
     }
 });
@@ -284,6 +210,7 @@ cmd({
     desc: "Fetch TV show episodes from sinhalasub.lk",
     filename: __filename
 }, async (conn, m, mek, { from, q, reply }) => {
+    if (!isValidJid(from)) return reply('*Error: Invalid chat ID. Please try again in a valid chat.*');
     if (!q || !isValidUrl(q)) return reply('*Please provide a valid URL!*');
 
     try {
@@ -307,35 +234,19 @@ cmd({
 
         if (download_links.length < 1) return conn.sendMessage(from, { text: 'No episodes found!' }, { quoted: mek });
 
-        const rows = download_links.map(item => ({
-            header: item.number,
-            title: item.name,
-            description: item.date,
-            id: `.subin2 ${item.link}`
-        }));
+        let textw = `📃 𝗧.𝗖 𝗧𝗩 𝗦𝗛𝗢𝗪 𝗘𝗣𝗜𝗦𝗢𝗗𝗘𝗦\n\n`;
+        textw += `*📌 Link:* ${q}\n`;
+        textw += `*📑 Title:* ${title}\n`;
+        textw += `*📝 Description:* ${desc}\n\n`;
+        textw += `*📑 Episodes:*\n`;
+        for (const item of download_links) {
+            textw += `*⛓️ Episode:* ${item.number} - ${item.name}\n*📅 Date:* ${item.date}\n*📎 Link:* ${item.link}\n*📲 Command:* .subin2 ${item.link}\n\n--------------------------------------------\n\n`;
+        }
 
-        const buttons = [{
-            name: "single_select",
-            buttonParamsJson: JSON.stringify({
-                title: 'Select episode 📥',
-                sections: [{
-                    title: 'Search By sinhalasub',
-                    highlight_label: 'T.C MOVIE-DL',
-                    rows
-                }]
-            })
-        }];
-
-        const info = `📌 *Link:* ${q}\n📑 *Title:* ${title}\n📝 *Description:* ${desc}`;
-        const opts = {
-            image: image || 'https://github.com/kushansewmina1234/DARKSHAN-DATA/blob/main/media/image/IMG-20240907-WA0006.jpg?raw=true',
-            header: '🎬━_*T.C SINHALASUB DL*_━🎬',
-            footer: 'MOVIE DOWNLOADER BY TC',
-            body: info
-        };
-        return await conn.sendButtonMessage(from, buttons, m, opts);
+        const opts = image ? { image: { url: image }, caption: textw } : { text: textw };
+        return await conn.sendMessage(from, opts, { quoted: mek });
     } catch (e) {
-        console.error(e);
+        console.error('TV show error:', e);
         reply(`*Error: ${e.message}*`);
     }
 });
@@ -348,6 +259,7 @@ cmd({
     desc: "Fetch episode download links from sinhalasub.lk",
     filename: __filename
 }, async (conn, mek, m, { reply, q, prefix, from }) => {
+    if (!isValidJid(from)) return reply('*Error: Invalid chat ID. Please try again in a valid chat.*');
     if (!q || !isValidUrl(q)) return reply('*Please provide a valid URL!*');
 
     try {
@@ -385,73 +297,20 @@ cmd({
         );
         const [fhd, hd, sd] = downloadUrls.filter(url => url !== null);
 
-        const msg = `📃 𝗧.𝗖 𝗠𝗢𝗩𝗜𝗘 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥\n\n
-📌 *Title:* ${title}\n
-🔗 *Link:* ${q}\n
-📅 *Date:* ${date}\n
-📝 *Description:* ${desc}\n`;
+        let textw = `📃 𝗧.𝗖 𝗘𝗣𝗜𝗦𝗢𝗗𝗘 �_D𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥\n\n`;
+        textw += `*📌 Title:* ${title}\n`;
+        textw += `*🔗 Link:* ${q}\n`;
+        textw += `*📅 Date:* ${date}\n`;
+        textw += `*📝 Description:* ${desc}\n\n`;
+        textw += `*📥 Download Links:*\n`;
+        if (sd) textw += `*SD 480P:*\n- MP4: ${prefix}mp4 ${sd}\n- MKV: ${prefix}mkv ${sd}\n- ZIP: ${prefix}zip ${sd}\n- RAR: ${prefix}fetchrar ${sd}\n`;
+        if (hd) textw += `*HD 720P:*\n- MP4: ${prefix}mp4 ${hd}\n- MKV: ${prefix}mkv ${hd}\n- ZIP: ${prefix}zip ${hd}\n- RAR: ${prefix}fetchrar ${hd}\n`;
+        if (fhd) textw += `*FHD 1080P:*\n- MP4: ${prefix}mp4 ${fhd}\n- MKV: ${prefix}mkv ${fhd}\n- ZIP: ${prefix}zip ${fhd}\n- RAR: ${prefix}fetchrar ${fhd}\n`;
 
-        const rows = [
-            { header: 'Select Mp4 Type Episode', title: `SD 480P`, description: '', id: `${prefix}mp4 ${sd || ''}` },
-            { header: '', title: `HD 720P`, description: '', id: `${prefix}mp4 ${hd || ''}` },
-            { header: '', title: `FHD 1080P`, description: '', id: `${prefix}mp4 ${fhd || ''}` }
-        ];
-        const rows1 = [
-            { header: 'Select Mkv Type Episode', title: `SD 480P`, description: '', id: `${prefix}mkv ${sd || ''}` },
-            { header: '', title: `HD 720P`, description: '', id: `${prefix}mkv ${hd || ''}` },
-            { header: '', title: `FHD 1080P`, description: '', id: `${prefix}mkv ${fhd || ''}` }
-        ];
-        const rows2 = [
-            { header: 'Select Zip Type Episode', title: `SD 480P`, description: '', id: `${prefix}zip ${sd || ''}` },
-            { header: '', title: `HD 720P`, description: '', id: `${prefix}zip ${hd || ''}` },
-            { header: '', title: `FHD 1080P`, description: '', id: `${prefix}zip ${fhd || ''}` }
-        ];
-        const rows3 = [
-            { header: 'Select Rar Type Episode', title: `SD 480P`, description: '', id: `${prefix}fetchrar ${sd || ''}` },
-            { header: '', title: `HD 720P`, description: '', id: `${prefix}fetchrar ${hd || ''}` },
-            { header: '', title: `FHD 1080P`, description: '', id: `${prefix}fetchrar ${fhd || ''}` }
-        ];
-
-        const buttons = [
-            {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: 'DOWNLOAD MP4 TYPE',
-                    sections: [{ title: 'Please select a quality', highlight_label: 'MP4', rows }]
-                })
-            },
-            {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: 'DOWNLOAD MKV TYPE',
-                    sections: [{ title: 'Please select a quality', highlight_label: 'MKV', rows: rows1 }]
-                })
-            },
-            {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: 'DOWNLOAD ZIP TYPE',
-                    sections: [{ title: 'Please select a quality', highlight_label: 'ZIP', rows: rows2 }]
-                })
-            },
-            {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                    title: 'DOWNLOAD RAR TYPE',
-                    sections: [{ title: 'Please select a quality', highlight_label: 'RAR', rows: rows3 }]
-                })
-            }
-        ];
-
-        const opts = {
-            image: image || 'https://github.com/kushansewmina1234/DARKSHAN-DATA/blob/main/media/image/IMG-20240907-WA0006.jpg?raw=true',
-            header: '🎬━_*T.C SINHALASUB DL*_━🎬',
-            footer: 'MOVIE DOWNLOADER BY TC',
-            body: msg
-        };
-        return await conn.sendButtonMessage(from, buttons, m, opts);
+        const opts = image ? { image: { url: image }, caption: textw } : { text: textw };
+        return await conn.sendMessage(from, opts, { quoted: mek });
     } catch (e) {
-        console.error(e);
+        console.error('Episode details error:', e);
         reply(`*Error: ${e.message}*`);
     }
 });
