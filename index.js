@@ -197,7 +197,9 @@ async function connectToWA() {
         console.log(`Received ${mediaType} message from ${from}`);
         // Add logic here, e.g., download or process media
     }
-  });
+  }); // Closing the messages.upsert event handler
+
+} // Closing the connectToWA function
 
 app.get("/", (req, res) => {
   res.send("hey, bot started✅");
