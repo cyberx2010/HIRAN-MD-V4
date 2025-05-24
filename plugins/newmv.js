@@ -1,21 +1,25 @@
 const axios = require('axios');
 const { cmd, commands } = require('../command');
-const { sinhalaSub } = require('mrnima-moviedl');
 
 cmd({
     pattern: 'sinhalasub',
     alias: ['moviesub'],
     react: '📑',
     category: 'movie',
-    desc: 'Search movies on sinhalasub and get download links',
+    desc: 'Search movies on Sinhala subtitle source and get download links',
     filename: __filename
 }, async (client, message, match, { from, q, reply }) => {
+    const API_KEY = 'Infinity-manoj-x-mizta';
+    const SEARCH_API = 'https://api.infinityapi.org/sinhala-search';
+    const INFO_API = 'https://api.infinityapi.org/sinhalasub-info';
+    const DOWNLOAD_API = 'https://api.infinityapi.org/sinhalasubs-download';
+
     try {
         if (!q) return await reply('*Please provide a search query! (e.g., Deadpool)*');
 
-        const sinhalaSubApi = await sinhalaSub();
-        const results = await sinhalaSubApi.search(q);
-        const searchResults = results.result.slice(0, 10);
+        // Search for movies
+        const searchResponse = await axios.get(`${SEARCH_API}?name=${encodeURIComponent(q)}&api=${API_KEY}`);
+        const searchResults = searchResponse.data.result.slice(0, 10);
 
         if (!searchResults || searchResults.length === 0) {
             return await reply(`No results found for: ${q}`);
@@ -63,19 +67,19 @@ cmd({
                 const selectedNumber = parseInt(userReply.trim());
                 if (!isNaN(selectedNumber) && selectedNumber > 0 && selectedNumber <= searchResults.length) {
                     const selectedMovie = searchResults[selectedNumber - 1];
-                    const movieUrl = `https://api-site-2.vercel.app/api/sinhalasub/movie?url=${encodeURIComponent(selectedMovie.link)}`;
 
                     try {
-                        const movieResponse = await axios.get(movieUrl);
+                        // Fetch movie details
+                        const movieResponse = await axios.get(`${INFO_API}?url=${encodeURIComponent(selectedMovie.link)}&api=${API_KEY}`);
                         const movieData = movieResponse.data.result;
                         const downloadLinks = movieData.dl_links || [];
 
                         if (downloadLinks.length === 0) {
-                            return await reply('No PixelDrain links found.');
+                            return await reply('No download links found.');
                         }
 
                         let downloadText = `🔢 *Please reply with the number you want to select*\n\n🎥 *${movieData.title}*\n\n`;
-                        downloadText += '*Available PixelDrain Download Links:*\n';
+                        downloadText += '*Available Download Links:*\n';
                         downloadLinks.forEach((link, index) => {
                             downloadText += `*${index + 1}.* ${link.quality}\nQuality: ${link.size}\n🔗 Link: ${link.link}\n\n`;
                         });
@@ -117,64 +121,74 @@ cmd({
                                 const selectedDownload = parseInt(downloadReply.trim());
                                 if (!isNaN(selectedDownload) && selectedDownload > 0 && selectedDownload <= downloadLinks.length) {
                                     const selectedLink = downloadLinks[selectedDownload - 1];
-                                    const fileId = selectedLink.link.split('/').pop();
 
-                                    await client.sendMessage(from, { react: { text: '⬇️', key: downloadMessage.key } });
-                                    await client.sendMessage(from, {
-                                        text: '*Downloading your movie... 📥*\n*Wait few minutes...*\n\n> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*',
-                                        contextInfo: {
-                                            mentionedJid: ['94768698018@s.whatsapp.net'],
-                                            groupMentions: [],
-                                            forwardingScore: 1,
-                                            isForwarded: true,
-                                            forwardedNewsletterMessageInfo: {
-                                                newsletterJid: '120363380266598327@g.us',
-                                                newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
-                                                serverMessageId: 999
-                                            },
-                                            externalAdReply: {
-                                                title: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃',
-                                                body: '𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀',
-                                                mediaType: 1,
-                                                sourceUrl: 'https://files.catbox.moe/4fsn8g.jpg',
-                                                thumbnailUrl: 'https://files.catbox.moe/rbskon.jpg',
-                                                renderLargerThumbnail: true,
-                                                showAdAttribution: true
-                                            }
+                                    try {
+                                        // Fetch the final download URL
+                                        const downloadResponse = await axios.get(`${DOWNLOAD_API}?link=${encodeURIComponent(selectedLink.link)}&api=${API_KEY}`);
+                                        const downloadUrl = downloadResponse.data.dl_link;
+
+                                        if (!downloadUrl) {
+                                            return await reply('Failed to retrieve the download link.');
                                         }
-                                    }, { quoted: message });
 
-                                    const downloadUrl = `https://pixeldrain.com/api/file/${fileId}`;
-
-                                    await client.sendMessage(from, { react: { text: '⬆', key: downloadMessage.key } });
-                                    await client.sendMessage(from, {
-                                        document: { url: downloadUrl },
-                                        mimetype: 'video/mp4',
-                                        fileName: `${movieData.title} - ${selectedLink.quality}.mp4`,
-                                        caption: `${movieData.title}\n${selectedLink.quality}\n*ᴄʀᴇᴀᴛᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*`,
-                                        contextInfo: {
-                                            mentionedJid: ['94768698018@s.whatsapp.net'],
-                                            groupMentions: [],
-                                            forwardingScore: 1,
-                                            isForwarded: true,
-                                            forwardedNewsletterMessageInfo: {
-                                                newsletterJid: '120363380266598327@g.us',
-                                                newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
-                                                serverMessageId: 999
-                                            },
-                                            externalAdReply: {
-                                                title: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃',
-                                                body: '𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀',
-                                                mediaType: 1,
-                                                sourceUrl: 'https://files.catbox.moe/4fsn8g.jpg',
-                                                thumbnailUrl: 'https://files.catbox.moe/rbskon.jpg',
-                                                renderLargerThumbnail: true,
-                                                showAdAttribution: true
+                                        await client.sendMessage(from, { react: { text: '⬇️', key: downloadMessage.key } });
+                                        await client.sendMessage(from, {
+                                            text: '*Downloading your movie... 📥*\n*Wait a few minutes...*\n\n> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*',
+                                            contextInfo: {
+                                                mentionedJid: ['94768698018@s.whatsapp.net'],
+                                                groupMentions: [],
+                                                forwardingScore: 1,
+                                                isForwarded: true,
+                                                forwardedNewsletterMessageInfo: {
+                                                    newsletterJid: '120363380266598327@g.us',
+                                                    newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
+                                                    serverMessageId: 999
+                                                },
+                                                externalAdReply: {
+                                                    title: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃',
+                                                    body: '𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀',
+                                                    mediaType: 1,
+                                                    sourceUrl: 'https://files.catbox.moe/4fsn8g.jpg',
+                                                    thumbnailUrl: 'https://files.catbox.moe/rbskon.jpg',
+                                                    renderLargerThumbnail: true,
+                                                    showAdAttribution: true
+                                                }
                                             }
-                                        }
-                                    }, { quoted: message });
+                                        }, { quoted: message });
 
-                                    await client.sendMessage(from, { react: { text: '✅', key: message.key } });
+                                        await client.sendMessage(from, { react: { text: '⬆', key: downloadMessage.key } });
+                                        await client.sendMessage(from, {
+                                            document: { url: downloadUrl },
+                                            mimetype: 'video/mp4',
+                                            fileName: `${movieData.title} - ${selectedLink.quality}.mp4`,
+                                            caption: `${movieData.title}\n${selectedLink.quality}\n*ᴄʀᴇᴀᴛᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*`,
+                                            contextInfo: {
+                                                mentionedJid: ['94768698018@s.whatsapp.net'],
+                                                groupMentions: [],
+                                                forwardingScore: 1,
+                                                isForwarded: true,
+                                                forwardedNewsletterMessageInfo: {
+                                                    newsletterJid: '120363380266598327@g.us',
+                                                    newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
+                                                    serverMessageId: 999
+                                                },
+                                                externalAdReply: {
+                                                    title: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃',
+                                                    body: '𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀',
+                                                    mediaType: 1,
+                                                    sourceUrl: 'https://files.catbox.moe/4fsn8g.jpg',
+                                                    thumbnailUrl: 'https://files.catbox.moe/rbskon.jpg',
+                                                    renderLargerThumbnail: true,
+                                                    showAdAttribution: true
+                                                }
+                                            }
+                                        }, { quoted: message });
+
+                                        await client.sendMessage(from, { react: { text: '✅', key: message.key } });
+                                    } catch (error) {
+                                        console.error('Error fetching download link:', error);
+                                        await reply('Failed to retrieve the download link. Please try again.');
+                                    }
                                 } else {
                                     await reply('Invalid selection. Please reply with a valid number.');
                                 }
