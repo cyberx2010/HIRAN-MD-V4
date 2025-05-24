@@ -1,6 +1,17 @@
-const { sinhalaSub } = require("mrnima-moviedl"); 
-const { command } = require("../command");
+const { sinhalaSub } = require("mrnima-moviedl");
+const { cmd } = require("../command"); // Ensure cmd is correctly exported
+const axios = require("axios"); // Add axios import
 
+cmd({
+  pattern: "sinhalasub",
+  alias: ["movie"],
+  react: '📑',
+  category: "download",
+  desc: "Search movies on sinhalasub and get download links",
+  filename: __filename
+}, async (client, message, msgInfo, { from, q, reply }) => {
+  // Rest of your code remains unchanged
+});
 cmd({
   pattern: "sinhalasub",
   alias: ["movie"],
