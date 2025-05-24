@@ -1,7 +1,8 @@
 const axios = require("axios");
-const { cmd, commands } = require('../command');
-const config = require('../config');
-const { fetchJson } = require('../lib/functions');
+const { cmd, commands } = require('../lib/command')
+const config = require('../settings');
+const {fetchJson} = require('../lib/functions');
+
 
 cmd({
   pattern: "sinhalasub",
@@ -17,35 +18,29 @@ async (conn, mek, m, { from, q, reply, prefix }) => {
 
     const res = await fetchJson(`https://nethu-api-ashy.vercel.app/movie/sinhalasub/search?text=${encodeURIComponent(q)}`);
 
-    if (!res.result || !res.result.data || res.result.data.length === 0) {
-      return reply("API call කරන්නෑ. No results found for: " + q);
+    if (!res.result || res.result.data.length === 0) {
+      return reply("api call කරන්නෑ.");
     }
 
-    const items = res.result.data.slice(0, 10);
+    const buttons = res.result.data.slice(0, 10).map((item, i) => ({
+      buttonId: `${prefix}sub_search ${item.link}`,
+      buttonText: { displayText: `${item.title}` },
+      type: 1
+    }));
 
-    const sections = [{
-      title: "📽️ Search Results",
-      rows: items.map((item, i) => ({
-        title: item.title,
-        rowId: `${prefix}sub_search ${item.link}`,
-        description: item.date || "No date available"
-      }))
-    }];
-
-    const listMessage = {
-      text: `*Sinhala Subtitle Search Results for:* ${q}`,
-      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ԋιɾαɳ ɱԃ ʋ3 🔒🪄",
-      title: "Select a Movie",
-      buttonText: "📋 Select Movie",
-      sections,
-      image: { url: "https://i.ibb.co/1YPWpS3H/9882.jpg" }
+    const buttonMessage = {
+      image: { url: "https://i.ibb.co/1YPWpS3H/9882.jpg" },
+      caption: `*Sinhala Subtitle Search Results for:* ${q}`,
+      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʟᴏᴋᴜ-ᴍᴅ 🔒🪄",
+      buttons: buttons,
+      headerType: 4
     };
 
-    await conn.sendMessage(from, listMessage, { quoted: mek });
+    return await conn.buttonMessage2(from, buttonMessage, mek);
 
   } catch (e) {
-    console.error("Error in sinhalasub command:", e.message, e.stack);
-    await reply(`*Error:* ${e.message || "Unknown error occurred"}`);
+    reply('*Error !!*');
+    console.error(e);
   }
 });
 
@@ -57,28 +52,30 @@ cmd({
 },
 async (conn, mek, m, { from, q, reply, prefix }) => {
   try {
-    if (!q) return reply("Link එක දියන් යකූ!");
+    if (!q) return reply("link eka diyan");
 
     const res = await fetchJson(`https://nethu-api-ashy.vercel.app/movie/sinhalasub/movie?url=${encodeURIComponent(q)}`);
-    const movieData = res?.result?.data;
-    if (!movieData) return reply("API එක call කරන්න බෑ. No data found.");
+    const data = res?.result?.data;
+    if (!data) return reply("api eka call karanna bh");
 
-    const downloadMessage = `
-*☘️ 𝗧ɪᴛʟᴇ ➮* _${movieData.title || "Not Available"}_
-*📅 𝗥ᴇʟᴇꜱᴇᴅ ᴅᴀᴛᴇ ➮* _${movieData.date || "N/A"}_
-*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* _${movieData.country || "N/A"}_
-*💃 𝗥ᴀᴛɪɴɢ ➮* _${movieData.tmdbRate || movieData.imdb || "N/A"}_
-*⏰ �_Rᴜɴᴛɪᴍᴇ ➮* _${movieData.runtime || "N/A"}_
-*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* _${movieData.subtitle_author || movieData.subtitle || "N/A"}_
-*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* _${movieData.category?.join(", ") || movieData.genre || ".NEW, Action, Drama"}_
+    const caption = `
+🎬 \`Title\` : ${data.title || "Not Available"}
+🗓️ \`Date\` : ${data.date}
+🌍 \`Country\` : ${data.country}
+🎥 \`Director\` : ${data.director}
+⭐ \`TMDB Rating\` : ${data.tmdbRate}
+🗳️ \`SinhalaSub Votes\` : ${data.sinhalasubVote}
+✍️ \`Subtitle Author\` : ${data.subtitle_author}
+🎞️ \`Category\` : ${data.category.join(", ")}
 
-> ⚜️ 𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝  -  ԋιɾαɳ ɱԃ ʋ3  𝐁𝐘  𝐇𝐈𝐑𝐀𝐍𝐘𝐀  𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀  
+🧾 *Description:* 
+${data.description}
 `.trim();
 
     const sections = [];
 
-    if (Array.isArray(movieData.pixeldrain_dl) && movieData.pixeldrain_dl.length > 0) {
-      const pixeldrainRows = movieData.pixeldrain_dl.map(item => ({
+    if (Array.isArray(data.pixeldrain_dl)) {
+      const pixeldrainRows = data.pixeldrain_dl.map(item => ({
         title: `${item.quality} (${item.size})`,
         rowId: `${prefix}sub_dl pixeldrain|${item.link}`
       }));
@@ -88,8 +85,8 @@ async (conn, mek, m, { from, q, reply, prefix }) => {
       });
     }
 
-    if (Array.isArray(movieData.ddl_dl) && movieData.ddl_dl.length > 0) {
-      const ddlRows = movieData.ddl_dl.map(item => ({
+    if (Array.isArray(data.ddl_dl)) {
+      const ddlRows = data.ddl_dl.map(item => ({
         title: `${item.quality} (${item.size})`,
         rowId: `${prefix}sub_dl ddl|${item.link}`
       }));
@@ -99,22 +96,18 @@ async (conn, mek, m, { from, q, reply, prefix }) => {
       });
     }
 
-    if (sections.length === 0) {
-      return reply("No download links available for this movie.");
-    }
-
     await conn.sendMessage(from, {
-      text: downloadMessage,
-      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ԋιɾαɳ ɱԃ ʋ3 🔒🪄",
-      title: "Download Links",
-      buttonText: "📥 Select Download",
+      text: caption,
+      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʟᴏᴋᴜ-ᴍᴅ 🔒🪄",
+      title: "",
+      buttonText: "`Reply Below Number` 🔢",
       sections,
-      image: { url: movieData.image || "https://i.ibb.co/1YPWpS3H/9882.jpg" }
+      image: { url: data.image }
     }, { quoted: mek });
 
   } catch (e) {
-    console.error("Error in sub_search command:", e.message, e.stack);
-    await reply(`*Error:* ${e.message || "Unknown error occurred"}`);
+    console.error(e);
+    await reply('*Error !!*');
   }
 });
 
@@ -122,23 +115,20 @@ cmd({
   pattern: "sub_dl",
   fromMe: false,
   desc: "Downloads the subtitle file from selected quality link",
-  type: "download",
-  filename: __filename
-},
-async (conn, mek, m, { q, reply }) => {
+  type: "download"
+}, async (conn, mek, m, { q, reply }) => {
   try {
     const [type, link] = q.split("|");
-    if (!link) return reply("❌ Link එක දියන් යකූ!");
+    if (!link) return reply("❌ Link direct karanna bah");
 
     await conn.sendMessage(m.chat, {
       document: { url: link },
       mimetype: 'video/mp4',
-      fileName: `ԋιɾαɳ-ɱԃ-ʋ3-SINHALASUB-${type.toUpperCase()}.mp4`,
-      caption: `Downloaded ${type} subtitle file`
+      fileName: 'ʟᴏᴋᴜ-ᴍᴅ-ꜱɪɴʜᴀʟᴀꜱᴜʙ_ᴅʟ.mp4'
     }, { quoted: mek });
 
   } catch (e) {
-    console.error("Error in sub_dl command:", e.message, e.stack);
-    await reply(`*Error:* ${e.message || "Failed to download subtitle"}`);
+    reply("❌ Download error.");
+    console.error(e);
   }
 });
