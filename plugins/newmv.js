@@ -1,4 +1,5 @@
 const { sinhalaSub } = require("mrnima-moviedl"); 
+const { command } = require("../command");
 
 cmd({
   pattern: "sinhalasub",
