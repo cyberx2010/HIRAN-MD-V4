@@ -2,15 +2,6 @@ const { sinhalaSub } = require("mrnima-moviedl");
 const { cmd } = require("../command"); // Ensure cmd is correctly exported
 const axios = require("axios"); // Add axios import
 
-cmd({
-  pattern: "sinhalasub",
-  alias: ["movie"],
-  react: '📑',
-  category: "download",
-  desc: "Search movies on sinhalasub and get download links",
-  filename: __filename
-}, async (client, message, msgInfo, { from, q, reply }) => {
-  // Rest of your code remains unchanged
 });
 cmd({
   pattern: "sinhalasub",
@@ -52,7 +43,7 @@ cmd({
         const selectedNumber = parseInt(userMessage.trim());
         if (!isNaN(selectedNumber) && selectedNumber > 0 && selectedNumber <= limitedResults.length) {
           const selectedMovie = limitedResults[selectedNumber - 1];
-          const apiUrl = `https://vajiraapi-5ea329b6f243.herokuapp.com/movie/sinhalasub/movie?url=${encodeURIComponent(selectedMovie.link)}`;
+          const apiUrl = `https://suhas-bro-api.vercel.app/movie/sinhalasub/movie?url=${encodeURIComponent(selectedMovie.link)}`;
 
           try {
             const movieDetails = await axios.get(apiUrl);
