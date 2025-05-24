@@ -20,7 +20,7 @@ cmd({
         await conn.sendMessage(from, { react: { text: '🔍', key: mek.key } });
 
         // Search movies
-        const searchResponse = await axios.get('[invalid url, do not cite]') {
+        const searchResponse = await axios.get('[invalid url, do not cite]') 
             headers: { Authorization: `Bearer ${API_KEY}` },
             params: { name: q },
             timeout: 10000
