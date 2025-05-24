@@ -31,8 +31,7 @@ const getPixelDrainApiUrl = (link) => {
 };
 
 // Generic search function for movies and TV shows
-async function searchSinhalaSub(conn, m, mek, { from, q, isDev, reply }, useButtons = true, isTVShow = false) {
-    if (!isDev) return reply('⚠️ ⚠️ *Contact owner to activate your number as a Premium user*');
+async function searchSinhalaSub(conn, m, mek, { from, q, reply }, useButtons = true, isTVShow = false) {
     if (!q) return reply('*Please provide a search query!*');
     
     try {
@@ -94,8 +93,7 @@ async function searchSinhalaSub(conn, m, mek, { from, q, isDev, reply }, useButt
 }
 
 // Generic download function for different file types
-async function downloadFile(conn, mek, m, { from, q, isDev, reply }, fileType) {
-    if (!isDev) return reply('⚠️ ⚠️ *Contact owner to activate your number as a Premium user*');
+async function downloadFile(conn, mek, m, { from, q, reply }, fileType) {
     if (!q || !isValidUrl(q)) return reply('*Please provide a valid direct URL!*');
 
     try {
@@ -164,8 +162,7 @@ cmd({
     category: "search",
     desc: "Fetch movie details and download links",
     filename: __filename
-}, async (conn, mek, m, { reply, q, isDev, prefix, from }) => {
-    if (!isDev) return reply('⚠️ ⚠️ *Contact owner to activate your number as a Premium user*');
+}, async (conn, mek, m, { reply, q, prefix, from }) => {
     if (!q || !isValidUrl(q)) return reply('*Please provide a valid URL!*');
 
     try {
@@ -286,8 +283,7 @@ cmd({
     category: "search",
     desc: "Fetch TV show episodes from sinhalasub.lk",
     filename: __filename
-}, async (conn, m, mek, { from, q, isDev, reply }) => {
-    if (!isDev) return reply('⚠️ ⚠️ *Contact owner to activate your number as a Premium user*');
+}, async (conn, m, mek, { from, q, reply }) => {
     if (!q || !isValidUrl(q)) return reply('*Please provide a valid URL!*');
 
     try {
@@ -351,8 +347,7 @@ cmd({
     category: "search",
     desc: "Fetch episode download links from sinhalasub.lk",
     filename: __filename
-}, async (conn, mek, m, { reply, q, isDev, prefix, from }) => {
-    if (!isDev) return reply('⚠️ ⚠️ *Contact owner to activate your number as a Premium user*');
+}, async (conn, mek, m, { reply, q, prefix, from }) => {
     if (!q || !isValidUrl(q)) return reply('*Please provide a valid URL!*');
 
     try {
