@@ -1,158 +1,196 @@
-const axios = require("axios");
+const axios = require('axios');
 const { cmd, commands } = require('../command');
-const config = require('../config');
-const { fetchJson } = require('../lib/functions');
+const { sinhalaSub } = require('mrnima-moviedl');
 
 cmd({
-  pattern: "sinhalasub",
-  alias: ["ssub"],
-  react: "🎬",
-  desc: "Search Sinhala Subtitles",
-  category: "movie",
-  use: `${config.PREFIX || '.'}sinhalasub 2024`,
-  filename: __filename
-},
-async (conn, mek, m, { from, q, reply, prefix, replyMap }) => {
-  try {
-    if (!q) return reply(`text එකක් දියන් යකූ (e.g. \`${config.PREFIX || '.'}ssub 2024\`)`);
+    pattern: 'sinhalasub',
+    alias: ['moviesub'],
+    react: '📑',
+    category: 'movie',
+    desc: 'Search movies on sinhalasub and get download links',
+    filename: __filename
+}, async (client, message, match, { from, q, reply }) => {
+    try {
+        if (!q) return await reply('*Please provide a search query! (e.g., Deadpool)*');
 
-    const res = await fetchJson(`${config.API_URL || 'https://nethu-api-ashy.vercel.app'}/movie/sinhalasub/search?text=${encodeURIComponent(q)}`);
+        const sinhalaSubApi = await sinhalaSub();
+        const results = await sinhalaSubApi.search(q);
+        const searchResults = results.result.slice(0, 10);
 
-    if (!res.result || !res.result.data || res.result.data.length === 0) {
-      return reply(`API call කරන්නෑ. No results found for: ${q}`);
+        if (!searchResults || searchResults.length === 0) {
+            return await reply(`No results found for: ${q}`);
+        }
+
+        let responseText = `🔢 *Please reply with the number you want to select*\n\n📽️ *Search Results for* "${q}":\n\n`;
+        searchResults.forEach((item, index) => {
+            responseText += `*${index + 1}.* ${item.title}\n🔗 Link: ${item.link}\n\n`;
+        });
+
+        const sentMessage = await client.sendMessage(from, {
+            text: responseText,
+            contextInfo: {
+                mentionedJid: ['94768698018@s.whatsapp.net'],
+                groupMentions: [],
+                forwardingScore: 1,
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                    newsletterJid: '120363380266598327@g.us',
+                    newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
+                    serverMessageId: 999
+                },
+                externalAdReply: {
+                    title: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃',
+                    body: '𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀',
+                    mediaType: 1,
+                    sourceUrl: 'https://files.catbox.moe/4fsn8g.jpg',
+                    thumbnailUrl: 'https://files.catbox.moe/rbskon.jpg',
+                    renderLargerThumbnail: true,
+                    showAdAttribution: true
+                }
+            }
+        }, { quoted: message });
+
+        const messageId = sentMessage.key.id;
+
+        client.ev.on('messages.upsert', async (msgUpdate) => {
+            const msg = msgUpdate.messages[0];
+            if (!msg.message) return;
+
+            const userReply = msg.message.conversation || msg.message.extendedTextMessage?.text;
+            const isReplyToSentMessage = msg.message.extendedTextMessage?.contextInfo?.stanzaId === messageId;
+
+            if (isReplyToSentMessage) {
+                const selectedNumber = parseInt(userReply.trim());
+                if (!isNaN(selectedNumber) && selectedNumber > 0 && selectedNumber <= searchResults.length) {
+                    const selectedMovie = searchResults[selectedNumber - 1];
+                    const movieUrl = `https://api-site-2.vercel.app/api/sinhalasub/movie?url=${encodeURIComponent(selectedMovie.link)}`;
+
+                    try {
+                        const movieResponse = await axios.get(movieUrl);
+                        const movieData = movieResponse.data.result;
+                        const downloadLinks = movieData.dl_links || [];
+
+                        if (downloadLinks.length === 0) {
+                            return await reply('No PixelDrain links found.');
+                        }
+
+                        let downloadText = `🔢 *Please reply with the number you want to select*\n\n🎥 *${movieData.title}*\n\n`;
+                        downloadText += '*Available PixelDrain Download Links:*\n';
+                        downloadLinks.forEach((link, index) => {
+                            downloadText += `*${index + 1}.* ${link.quality}\nQuality: ${link.size}\n🔗 Link: ${link.link}\n\n`;
+                        });
+
+                        const downloadMessage = await client.sendMessage(from, {
+                            text: downloadText,
+                            contextInfo: {
+                                mentionedJid: ['94768698018@s.whatsapp.net'],
+                                groupMentions: [],
+                                forwardingScore: 1,
+                                isForwarded: true,
+                                forwardedNewsletterMessageInfo: {
+                                    newsletterJid: '120363380266598327@g.us',
+                                    newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
+                                    serverMessageId: 999
+                                },
+                                externalAdReply: {
+                                    title: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
+                                    body: '𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀',
+                                    mediaType: 1,
+                                    sourceUrl: 'https://files.catbox.moe/4fsn8g.jpg',
+                                    thumbnailUrl: 'https://files.catbox.moe/rbskon.jpg',
+                                    renderLargerThumbnail: true,
+                                    showAdAttribution: true
+                                }
+                            }
+                        }, { quoted: msg });
+
+                        const downloadMessageId = downloadMessage.key.id;
+
+                        client.ev.on('messages.upsert', async (downloadMsgUpdate) => {
+                            const downloadMsg = downloadMsgUpdate.messages[0];
+                            if (!downloadMsg.message) return;
+
+                            const downloadReply = downloadMsg.message.conversation || downloadMsg.message.extendedTextMessage?.text;
+                            const isReplyToDownloadMessage = downloadMsg.message.extendedTextMessage?.contextInfo?.stanzaId === downloadMessageId;
+
+                            if (isReplyToDownloadMessage) {
+                                const selectedDownload = parseInt(downloadReply.trim());
+                                if (!isNaN(selectedDownload) && selectedDownload > 0 && selectedDownload <= downloadLinks.length) {
+                                    const selectedLink = downloadLinks[selectedDownload - 1];
+                                    const fileId = selectedLink.link.split('/').pop();
+
+                                    await client.sendMessage(from, { react: { text: '⬇️', key: downloadMessage.key } });
+                                    await client.sendMessage(from, {
+                                        text: '*Downloading your movie... 📥*\n*Wait few minutes...*\n\n> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*',
+                                        contextInfo: {
+                                            mentionedJid: ['94768698018@s.whatsapp.net'],
+                                            groupMentions: [],
+                                            forwardingScore: 1,
+                                            isForwarded: true,
+                                            forwardedNewsletterMessageInfo: {
+                                                newsletterJid: '120363380266598327@g.us',
+                                                newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
+                                                serverMessageId: 999
+                                            },
+                                            externalAdReply: {
+                                                title: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃',
+                                                body: '𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀',
+                                                mediaType: 1,
+                                                sourceUrl: 'https://files.catbox.moe/4fsn8g.jpg',
+                                                thumbnailUrl: 'https://files.catbox.moe/rbskon.jpg',
+                                                renderLargerThumbnail: true,
+                                                showAdAttribution: true
+                                            }
+                                        }
+                                    }, { quoted: message });
+
+                                    const downloadUrl = `https://pixeldrain.com/api/file/${fileId}`;
+
+                                    await client.sendMessage(from, { react: { text: '⬆', key: downloadMessage.key } });
+                                    await client.sendMessage(from, {
+                                        document: { url: downloadUrl },
+                                        mimetype: 'video/mp4',
+                                        fileName: `${movieData.title} - ${selectedLink.quality}.mp4`,
+                                        caption: `${movieData.title}\n${selectedLink.quality}\n*ᴄʀᴇᴀᴛᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*`,
+                                        contextInfo: {
+                                            mentionedJid: ['94768698018@s.whatsapp.net'],
+                                            groupMentions: [],
+                                            forwardingScore: 1,
+                                            isForwarded: true,
+                                            forwardedNewsletterMessageInfo: {
+                                                newsletterJid: '120363380266598327@g.us',
+                                                newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🩵',
+                                                serverMessageId: 999
+                                            },
+                                            externalAdReply: {
+                                                title: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃',
+                                                body: '𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀',
+                                                mediaType: 1,
+                                                sourceUrl: 'https://files.catbox.moe/4fsn8g.jpg',
+                                                thumbnailUrl: 'https://files.catbox.moe/rbskon.jpg',
+                                                renderLargerThumbnail: true,
+                                                showAdAttribution: true
+                                            }
+                                        }
+                                    }, { quoted: message });
+
+                                    await client.sendMessage(from, { react: { text: '✅', key: message.key } });
+                                } else {
+                                    await reply('Invalid selection. Please reply with a valid number.');
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error fetching movie details:', error);
+                        await reply('An error occurred while fetching movie details. Please try again.');
+                    }
+                } else {
+                    await reply('Invalid selection. Please reply with a valid number.');
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error during search:', error);
+        await reply('*An error occurred while searching!*');
     }
-
-    const items = res.result.data.slice(0, 10);
-    let responseText = `*Sinhala Subtitle Search Results for:* ${q}\n\n`;
-    items.forEach((item, i) => {
-      responseText += `${i + 1}. *${item.title}* (${item.date || 'No date'})\n🔗 Reply with ${i + 1} to select\n\n`;
-    });
-    responseText += `> Reply with the number of the movie to get details.\n> © Powered by ${config.BOT_NAME || 'HIRAN MD V4'}`;
-
-    const sentMessage = await conn.sendMessage(from, {
-      text: responseText,
-      image: { url: "https://i.ibb.co/1YPWpS3H/9882.jpg" }
-    }, { quoted: mek });
-
-    // Use replyMap to handle user replies
-    conn.addReplyTracker(sentMessage.key.id, async (m, userReply) => {
-      const selectedIndex = parseInt(userReply) - 1;
-      if (!isNaN(selectedIndex) && selectedIndex >= 0 && selectedIndex < items.length) {
-        const selectedItem = items[selectedIndex];
-        await conn.sendMessage(from, {
-          text: `Selected: *${selectedItem.title}*\nProcessing details...`,
-          react: { text: '🔎', key: m.key }
-        }, { quoted: m });
-        // Trigger sub_search command
-        await conn.sendMessage(from, {
-          text: `${prefix}sub_search ${selectedItem.link}`
-        }, { quoted: m });
-      } else {
-        await conn.sendMessage(from, {
-          text: `Invalid number. Please reply with a number between 1 and ${items.length}`
-        }, { quoted: m });
-      }
-    });
-
-  } catch (e) {
-    console.error("Error in sinhalasub command:", e.message, e.stack);
-    await reply(`*Error:* ${e.message || "Unknown error occurred"}`);
-  }
-});
-
-cmd({
-  pattern: "sub_search",
-  react: "🔎",
-  dontAddCommandList: true,
-  filename: __filename
-},
-async (conn, mek, m, { from, q, reply, prefix }) => {
-  try {
-    if (!q) return reply("Link එක දියන් යකූ!");
-
-    const res = await fetchJson(`${config.API_URL || 'https://nethu-api-ashy.vercel.app'}/movie/sinhalasub/movie?url=${encodeURIComponent(q)}`);
-    const data = res?.result?.data;
-    if (!data) return reply("API එක call කරන්න බෑ. No data found.");
-
-    const caption = `
-*☘️ 𝗧ɪᴛʟᴇ ➮* _${data.title || "Not Available"}_
-*📅 𝗥ᴇʟᴇꜱᴇᴅ ᴅᴀᴛᴇ ➮* _${data.date || "N/A"}_
-*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* _${data.country || "N/A"}_
-*💃 �_Rᴀᴛɪɴɢ ➮* _${data.tmdbRate || data.imdb || "N/A"}_
-*⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* _${data.runtime || "N/A"}_
-*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* _${data.subtitle_author || data.subtitle || "N/A"}_
-*🎭 �_Gᴇɴᴀʀᴇꜱ ➮* _${data.category?.join(", ") || data.genre || ".NEW, Action, Drama"}_
-
-🧾 *Description:* 
-${data.description || "No description available"}
-
-> ⚜️ 𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝 - ${config.BOT_NAME || 'HIRAN MD V4'} 𝐁𝐘 𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀
-`.trim();
-
-    const sections = [];
-
-    if (Array.isArray(data.pixeldrain_dl) && data.pixeldrain_dl.length > 0) {
-      const pixeldrainRows = data.pixeldrain_dl.map(item => ({
-        title: `${item.quality} (${item.size})`,
-        rowId: `${prefix}sub_dl pixeldrain|${item.link}`
-      }));
-      sections.push({
-        title: "📥 PixelDrain",
-        rows: pixeldrainRows
-      });
-    }
-
-    if (Array.isArray(data.ddl_dl) && data.ddl_dl.length > 0) {
-      const ddlRows = data.ddl_dl.map(item => ({
-        title: `${item.quality} (${item.size})`,
-        rowId: `${prefix}sub_dl ddl|${item.link}`
-      }));
-      sections.push({
-        title: "📥 DDL",
-        rows: ddlRows
-      });
-    }
-
-    if (sections.length === 0) {
-      return reply("No download links available for this movie.");
-    }
-
-    await conn.sendMessage(from, {
-      text: caption,
-      footer: `> © Powered by ${config.BOT_NAME || 'HIRAN MD V4'}`,
-      title: "Download Links",
-      buttonText: "`Reply Below Number` 🔢",
-      sections,
-      image: { url: data.image || "https://i.ibb.co/1YPWpS3H/9882.jpg" }
-    }, { quoted: mek });
-
-  } catch (e) {
-    console.error("Error in sub_search command:", e.message, e.stack);
-    await reply(`*Error:* ${e.message || "Unknown error occurred"}`);
-  }
-});
-
-cmd({
-  pattern: "sub_dl",
-  fromMe: false,
-  desc: "Downloads the subtitle file from selected quality link",
-  type: "download",
-  filename: __filename
-},
-async (conn, mek, m, { q, reply }) => {
-  try {
-    const [type, link] = q.split("|");
-    if (!link) return reply("❌ Link එක දියන් යකූ!");
-
-    await conn.sendMessage(m.chat, {
-      document: { url: link },
-      mimetype: 'video/mp4',
-      fileName: `${config.BOT_NAME || 'HIRAN-MD-V4'}-SINHALASUB-${type.toUpperCase()}.mp4`,
-      caption: `Downloaded ${type} subtitle file`
-    }, { quoted: mek });
-
-  } catch (e) {
-    console.error("Error in sub_dl command:", e.message, e.stack);
-    await reply(`*Error:* ${e.message || "Failed to download subtitle"}`);
-  }
 });
