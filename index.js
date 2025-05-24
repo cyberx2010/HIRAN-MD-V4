@@ -48,12 +48,13 @@ async function connectToWA() {
   });
 
   // Add reply tracker method here:
-  conn.addReplyTracker = (msgId, callback) => {
-    replyMap.set(msgId, { callback });
+  conn.addReplyTracker = (msgId, callback, from) => {
+    const replyKey = `${from}:${msgId}`;
+    replyMap.set(replyKey, { callback });
 
     // Auto remove after 5 minutes
     setTimeout(() => {
-      replyMap.delete(msgId);
+      replyMap.delete(replyKey);
     }, 5 * 60 * 1000);
   };
 
@@ -107,11 +108,11 @@ async function connectToWA() {
 
   conn.ev.on('creds.update', saveCreds);
 
-  conn.ev.on('messages.upsert', async (mek) => {
-    mek = mek.messages[0];
+  conn.ev.on('messages.upsert', async ({ messages }) => {
+    const mek = messages[0];
     if (!mek.message) return;
-    mek.message = (getContentType(mek.message) === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message;
-    const m = sms(conn, mek);
+
+    // Extract message details
     const type = getContentType(mek.message);
     const content = JSON.stringify(mek.message);
     const from = mek.key.remoteJid;
@@ -135,7 +136,7 @@ async function connectToWA() {
     const groupAdmins = isGroup ? await getGroupAdmins(participants) : '';
     const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false;
     const isAdmins = isGroup ? groupAdmins.includes(sender) : false;
-    const isReact = m.message.reactionMessage ? true : false;
+    const isReact = mek.message.reactionMessage ? true : false;
 
     const reply = (teks) => {
       conn.sendMessage(from, { text: teks }, { quoted: mek });
@@ -143,44 +144,60 @@ async function connectToWA() {
 
     // --- New stanzaId reply handling ---
     const stanzaId = mek.message?.extendedTextMessage?.contextInfo?.stanzaId || mek.key.id;
-    if (replyMap.has(stanzaId)) {
-      const { callback } = replyMap.get(stanzaId);
-      return callback(m, (mek.message?.conversation || mek.message?.extendedTextMessage?.text || '').trim());
+    const replyKey = `${from}:${stanzaId}`;
+    if (replyMap.has(replyKey)) {
+        const { callback } = replyMap.get(replyKey);
+        try {
+            await callback(mek, (mek.message?.conversation || mek.message?.extendedTextMessage?.text || '').trim());
+        } catch (error) {
+            console.error('Error in reply tracker callback:', error.message);
+            await conn.sendMessage(from, {
+                text: `*Error processing your reply: ${error.message}*`
+            }, { quoted: mek });
+        }
+        return; // Exit after handling reply to prevent further processing
     }
     // --- end stanzaId reply handling ---
 
-    const events = require('./command');
-    const cmdName = isCmd ? body.slice(1).trim().split(" ")[0].toLowerCase() : false;
+    // Handle commands
     if (isCmd) {
-      const cmd = events.commands.find((cmd) => cmd.pattern === (cmdName)) || events.commands.find((cmd) => cmd.alias && cmd.alias.includes(cmdName));
-      if (cmd) {
-        if (cmd.react) conn.sendMessage(from, { react: { text: cmd.react, key: mek.key } });
-        try {
-          cmd.function(conn, mek, m, {
-            from, quoted, body, isCmd, command, args, q, isGroup, sender,
-            senderNumber, botNumber2, botNumber, pushname, isMe, isOwner,
-            groupMetadata, groupName, participants, groupAdmins, isBotAdmins,
-            isAdmins, reply, replyMap
-          });
-        } catch (e) {
-          console.error("[PLUGIN ERROR] " + e);
+        const cmd = events.commands.find((cmd) => cmd.pattern === command) || events.commands.find((cmd) => cmd.alias && cmd.alias.includes(command));
+        if (cmd) {
+            if (cmd.react) conn.sendMessage(from, { react: { text: cmd.react, key: mek.key } });
+            try {
+                cmd.function(conn, mek, m, {
+                    from, quoted, body, isCmd, command, args, q, isGroup, sender,
+                    senderNumber, botNumber2, botNumber, pushname, isMe, isOwner,
+                    groupMetadata, groupName, participants, groupAdmins, isBotAdmins,
+                    isAdmins, reply, replyMap
+                });
+            } catch (e) {
+                console.error("[PLUGIN ERROR] " + e);
+            }
         }
-      }
     }
 
-    events.commands.map(async (command) => {
-      if (body && command.on === "body") {
-        command.function(conn, mek, m, {
-          from, quoted, body, isCmd, command, args, q, isGroup, sender,
-          senderNumber, botNumber2, botNumber, pushname, isMe, isOwner,
-          groupMetadata, groupName, participants, groupAdmins, isBotAdmins,
-          isAdmins, reply, replyMap
-        });
-      }
-    });
+    // Handle non-command messages
+    if (!isCmd && body) {
+        console.log(`Received non-command message: ${body} from ${from}`);
+        // Add custom logic here, e.g., echo or AI responses
+    }
 
+    // Handle reactions
+    if (isReact) {
+        const reaction = mek.message.reactionMessage.text;
+        const reactedTo = mek.message.reactionMessage.key;
+        console.log(`Reaction received: ${reaction} on message ${reactedTo.id} from ${from}`);
+        // Add logic here, e.g., respond to specific reactions
+    }
+
+    // Handle other message types (e.g., images, videos)
+    if (type === 'imageMessage' || type === 'videoMessage') {
+        const mediaType = type === 'imageMessage' ? 'Image' : 'Video';
+        console.log(`Received ${mediaType} message from ${from}`);
+        // Add logic here, e.g., download or process media
+    }
   });
-}
 
 app.get("/", (req, res) => {
   res.send("hey, bot started✅");
