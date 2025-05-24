@@ -3,13 +3,15 @@ const axios = require('axios');
 const { cmd } = require('../command');
 require('dotenv').config();
 
-// Helper: Retry API Calls
+// Helper: Retry API Calls with Logging
 const fetchWithRetry = async (url, retries = 3, backoff = 1000) => {
+    console.log(`Fetching URL: ${url}`);
     try {
         const response = await axios.get(url, { timeout: 10000 });
-        console.log(`API Response for ${url}:`, JSON.stringify(response.data, null, 2));
+        console.log(`Response for ${url}:`, JSON.stringify(response.data, null, 2));
         return response;
     } catch (error) {
+        console.error(`Error fetching ${url}: ${error.message}`, error.response?.data || '');
         if (retries === 0 || (error.response && error.response.status !== 429)) {
             throw new Error(`Failed to fetch ${url}: ${error.message}`);
         }
@@ -55,23 +57,57 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, q, reply, isMe }) => {
     try {
-        if (!q || !/^[a-zA-Z0-9\s]+$/.test(q)) {
-            return await reply('*Please provide a valid movie name to search! (e.g., Good Bad Ugly)*');
+        if (!q || !/^[a-zA-Z0-9\s&]+$/.test(q)) {
+            return await reply('*Please provide a valid movie name to search! (e.g., Deadpool & Wolverine)*');
         }
 
         await conn.sendMessage(from, { react: { text: '🔍', key: mek.key } });
 
-        // Search movies
-        const searchUrl = `https://api.infinityapi.org/cine-movie-search?name=${encodeURIComponent(q)}&api=Infinity-FA240F-284CE-FC00-875A7`;
-        const searchResponse = await fetchWithRetry(searchUrl);
-        const searchData = searchResponse.data;
+        // Try multiple search terms
+        const searchTerms = [
+            q,
+            q.toLowerCase().includes('deadpool') ? 'Deadpool & Wolverine' : q,
+            q.toLowerCase().includes('deadpool') ? 'Deadpool 3' : q
+        ].filter((term, index, self) => self.indexOf(term) === index); // Remove duplicates
 
-        if (!searchData.status || !searchData.result?.data?.length) {
-            return await reply(`*No results found for:* "${q}"`);
+        let searchData = null;
+        let usedTerm = '';
+        let lastError = '';
+
+        for (const term of searchTerms) {
+            console.log(`Trying search term: ${term}`);
+            const searchUrl = `https://api.infinityapi.org/cine-movie-search?name=${encodeURIComponent(term)}&api=Infinity-FA240F-284CE-FC00-875A7`;
+            try {
+                const searchResponse = await fetchWithRetry(searchUrl);
+                searchData = searchResponse.data;
+                usedTerm = term;
+
+                if (searchData.status && searchData.result?.data?.length) {
+                    break; // Found results
+                } else {
+                    lastError = `No results for "${term}". Response: ${JSON.stringify(searchData)}`;
+                }
+            } catch (error) {
+                lastError = `Error searching "${term}": ${error.message}`;
+                console.error(lastError);
+            }
+        }
+
+        if (!searchData || !searchData.status || !searchData.result?.data?.length) {
+            console.error(`Search failed. Last error: ${lastError}`);
+            return await reply(
+                `*No results found for:* "${q}".\n` +
+                `Possible reasons:\n` +
+                `- Try a more specific title (e.g., Deadpool & Wolverine).\n` +
+                `- Check if the API key is valid.\n` +
+                `Manual test: Run this in a terminal or Postman:\n` +
+                `\`\`\`bash\ncurl "https://api.infinityapi.org/cine-movie-search?name=Deadpool%20%26%20Wolverine&api=Infinity-FA240F-284CE-FC00-875A7"\n\`\`\`\n` +
+                `Contact the bot admin if the issue persists.`
+            );
         }
 
         const searchResults = searchData.result.data.slice(0, 10);
-        const resultsMessage = `*𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐌𝐎𝐕𝐈𝐄 𝐒𝐄𝐀𝐑𝐂𝐇*\n\n🎥 *Search Results for* "${q}":\n\n` +
+        const resultsMessage = `*𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐌𝐎𝐕𝐈𝐄 𝐒𝐄𝐀𝐑𝐂𝐇*\n\n🎥 *Search Results for* "${usedTerm}":\n\n` +
             searchResults.map((r, i) => `*${i + 1}.* ${r.title} (${r.year || 'N/A'})\n🔗 Link: ${r.movie_link || 'N/A'}\n`).join('\n');
 
         await sleep(2000);
@@ -186,10 +222,10 @@ cmd({
                             `*📅 𝗥ᴇʟᴇᴀꜱᴇᴅ ᴅᴀᴛᴇ ➮* ${date || 'N/A'}\n` +
                             `*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* ${country || 'N/A'}\n` +
                             `*💃 𝗥ᴀᴛɪɴɢ ➮* ${imdbRate || 'N/A'}\n` +
-                            `*⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* ${duration || 'N/A'}\n` +
+                            `*⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* ${date || 'N/A'}\n` +
                             `*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* ${subtitle || 'N/A'}\n` +
-                            `*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* ${genre || '.NEW, Action, Drama'}\n` +
-                            `*🔗 �_L𝗶𝗻𝗸 ➮* ${downloadUrl}\n\n` +
+                            `*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* ${genre || '.NEW, Action, Comedy'}\n` +
+                            `*🔗 𝗟𝗶𝗻𝗸 ➮* ${downloadUrl}\n\n` +
                             `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
 
                         // File host instructions
@@ -259,7 +295,7 @@ cmd({
                         `*💃 IMDb Rating:* ${imdbRate || 'N/A'}\n` +
                         `*⏰ Runtime:* ${duration || 'N/A'}\n` +
                         `*💁‍♂️ Subtitle By:* ${subtitle || 'N/A'}\n` +
-                        `*🎭 Genres:* ${genre || '.NEW, Action, Drama'}\n` +
+                        `*🎭 Genres:* ${genre || '.NEW, Action, Comedy'}\n` +
                         `*🔗 Link:* ${selectedMovie.movie_link}\n\n` +
                         `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
                     await conn.sendMessage(from, { text: detailsMessage }, { quoted: mek });
@@ -270,6 +306,6 @@ cmd({
         });
     } catch (error) {
         console.error('Error during movie search:', error.message);
-        await reply(`*Error: ${error.message || 'An unexpected error occurred.'}*`);
+        await reply(`*Error: ${error.message || 'An unexpected error occurred.'}*\nTry manual search: curl "https://api.infinityapi.org/cine-movie-search?name=Deadpool%20%26%20Wolverine&api=Infinity-FA240F-284CE-FC00-875A7"`);
     }
 });
