@@ -3,15 +3,13 @@ const axios = require('axios');
 const { cmd } = require('../command');
 require('dotenv').config();
 
-// Helper: Retry API Calls with Logging
+// Helper: Retry API Calls
 const fetchWithRetry = async (url, retries = 3, backoff = 1000) => {
-    console.log(`Fetching URL: ${url}`);
     try {
         const response = await axios.get(url, { timeout: 10000 });
-        console.log(`Response for ${url}:`, JSON.stringify(response.data, null, 2));
+        console.log(`API Response for ${url}:`, JSON.stringify(response.data, null, 2)); // Debug log
         return response;
     } catch (error) {
-        console.error(`Error fetching ${url}: ${error.message}`, error.response?.data || '');
         if (retries === 0 || (error.response && error.response.status !== 429)) {
             throw new Error(`Failed to fetch ${url}: ${error.message}`);
         }
@@ -22,7 +20,7 @@ const fetchWithRetry = async (url, retries = 3, backoff = 1000) => {
 
 // Helper: Validate File Size
 const validateFileSize = (size) => {
-    if (!size || typeof size !== 'string') return true;
+    if (!size || typeof size !== 'string') return true; // Assume valid if unknown
     const match = size.match(/(\d*\.?\d+)\s*(GB|MB)/i);
     if (!match) return true;
     const value = parseFloat(match[1]);
@@ -31,86 +29,38 @@ const validateFileSize = (size) => {
     return sizeMB <= 2000; // WhatsApp limit ~2GB
 };
 
-// Helper: Validate URL
-const isValidUrl = (url) => {
-    try {
-        new URL(url);
-        return (
-            url.includes('drive.google.com') ||
-            url.includes('mega.nz') ||
-            url.includes('mediafire.com') ||
-            url.includes('catbox.moe') ||
-            url.includes('file.io')
-        );
-    } catch {
-        return false;
-    }
-};
-
-// CineSubz Command (Using Infinity API)
+// CineSubz Command
 cmd({
     pattern: "cinesubz",
     alias: ["cine"],
     react: "🎬",
     category: "movie",
-    desc: "Search and download movies using Infinity API",
+    desc: "Search and download movies from CineSubz",
     filename: __filename
 }, async (conn, mek, m, { from, q, reply, isMe }) => {
     try {
-        if (!q || !/^[a-zA-Z0-9\s&]+$/.test(q)) {
-            return await reply('*Please provide a valid movie name to search! (e.g., Deadpool & Wolverine)*');
+        // Validate input query
+        if (!q || !/^[a-zA-Z0-9\s]+$/.test(q)) {
+            return await reply('*Please provide a valid movie name to search! (e.g., Avatar)*');
         }
 
         await conn.sendMessage(from, { react: { text: '🔍', key: mek.key } });
 
-        // Try multiple search terms
-        const searchTerms = [
-            q,
-            q.toLowerCase().includes('deadpool') ? 'Deadpool & Wolverine' : q,
-            q.toLowerCase().includes('deadpool') ? 'Deadpool 3' : q
-        ].filter((term, index, self) => self.indexOf(term) === index); // Remove duplicates
+        // Search movies from CineSubz API
+        const searchResponse = await fetchWithRetry(
+            `https://cinesubz-api-zazie.vercel.app/api/search?q=${encodeURIComponent(q)}`
+        );
+        const searchData = searchResponse.data;
 
-        let searchData = null;
-        let usedTerm = '';
-        let lastError = '';
-
-        for (const term of searchTerms) {
-            console.log(`Trying search term: ${term}`);
-            const searchUrl = `https://api.infinityapi.org/cine-movie-search?name=${encodeURIComponent(term)}&api=Infinity-FA240F-284CE-FC00-875A7`;
-            try {
-                const searchResponse = await fetchWithRetry(searchUrl);
-                searchData = searchResponse.data;
-                usedTerm = term;
-
-                if (searchData.status && searchData.result?.data?.length) {
-                    break; // Found results
-                } else {
-                    lastError = `No results for "${term}". Response: ${JSON.stringify(searchData)}`;
-                }
-            } catch (error) {
-                lastError = `Error searching "${term}": ${error.message}`;
-                console.error(lastError);
-            }
-        }
-
-        if (!searchData || !searchData.status || !searchData.result?.data?.length) {
-            console.error(`Search failed. Last error: ${lastError}`);
-            return await reply(
-                `*No results found for:* "${q}".\n` +
-                `Possible reasons:\n` +
-                `- Try a more specific title (e.g., Deadpool & Wolverine).\n` +
-                `- Check if the API key is valid.\n` +
-                `Manual test: Run this in a terminal or Postman:\n` +
-                `\`\`\`bash\ncurl "https://api.infinityapi.org/cine-movie-search?name=Deadpool%20%26%20Wolverine&api=Infinity-FA240F-284CE-FC00-875A7"\n\`\`\`\n` +
-                `Contact the bot admin if the issue persists.`
-            );
+        if (!searchData.status || !searchData.result?.data?.length) {
+            return await reply(`*No results found for:* "${q}"`);
         }
 
         const searchResults = searchData.result.data.slice(0, 10);
-        const resultsMessage = `*𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐌𝐎𝐕𝐈𝐄 𝐒𝐄𝐀𝐑𝐂𝐇*\n\n🎥 *Search Results for* "${usedTerm}":\n\n` +
-            searchResults.map((r, i) => `*${i + 1}.* ${r.title} (${r.year || 'N/A'})\n🔗 Link: ${r.movie_link || 'N/A'}\n`).join('\n');
+        const resultsMessage = `*𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐂𝐈𝐍𝐄𝐒𝐔𝐁𝐙 𝐒𝐄𝐀𝐑𝐂𝐇*\n\n🎥 *Search Results for* "${q}":\n\n` +
+            searchResults.map((r, i) => `*${i + 1}.* ${r.title} (${r.year})\n🔗 Link: ${r.link}\n`).join('\n');
 
-        await sleep(2000);
+        await sleep(2000); // Delay for better UX
         const sentMsg = await conn.sendMessage(from, { text: resultsMessage }, { quoted: mek });
 
         // Handle movie selection
@@ -123,18 +73,19 @@ cmd({
             const selectedMovie = searchResults[selectedNumber - 1];
             let movieData;
             try {
-                const movieUrl = `https://api.infinityapi.org/cine-minfo?url=${encodeURIComponent(selectedMovie.movie_link)}&api=Infinity-FA240F-284CE-FC00-875A7`;
-                const movieResponse = await fetchWithRetry(movieUrl);
+                const movieResponse = await fetchWithRetry(
+                    `https://cinesubz-api-zazie.vercel.app/api/movie?url=${encodeURIComponent(selectedMovie.link)}`
+                );
                 movieData = movieResponse.data;
-                if (!movieData.status || !movieData.result?.data) throw new Error('Invalid movie data');
+                if (!movieData.status || !movieData.result.data) throw new Error('Invalid movie data');
             } catch (error) {
                 console.error('Error fetching movie details:', error.message);
                 return await reply(`*Error fetching movie details: ${error.message || 'Please try again.'}*`);
             }
 
-            const { title, imdbRate, image, date, country, duration, dl_links, subtitle_author: subtitle, category: genre } = movieData.result.data;
+            const { title, imdbRate, image, date, country, duration, dl_links, subtitle, genre } = movieData.result.data;
 
-            // Send movie menu
+            // Send movie menu with poster
             const year = date?.match(/\d{4}/)?.[0] || 'N/A';
             const posterUrl = image || 'https://files.catbox.moe/lacqi4.jpg';
             const menuMessage = `*🎥 ${title} (${year})*\n\n` +
@@ -157,7 +108,7 @@ cmd({
                         title,
                         body: 'ʜɪʀᴀɴ ᴍᴅ ᴍᴏᴠɪᴇ',
                         mediaType: 1,
-                        sourceUrl: selectedMovie.movie_link,
+                        sourceUrl: selectedMovie.link,
                         thumbnailUrl: posterUrl,
                         renderLargerThumbnail: true,
                         showAdAttribution: true
@@ -169,20 +120,21 @@ cmd({
             conn.addReplyTracker(menuMsg.key.id, async (mek, optionType) => {
                 const option = optionType.trim();
                 if (option === '1') {
+                    // Download option
                     if (!dl_links || !dl_links.length) {
                         return await reply('*No download links available for this movie.*');
                     }
 
-                    // Validate links
-                    const validLinks = dl_links.filter(link => validateFileSize(link.size) && isValidUrl(link.link));
+                    // Validate file sizes
+                    const validLinks = dl_links.filter(link => validateFileSize(link.size));
                     if (!validLinks.length) {
-                        return await reply('*No valid downloadable links under 2GB available.* Try another movie.\nInvalid links:\n' + dl_links.map(l => `${l.quality}: ${l.link}`).join('\n'));
+                        return await reply('*No downloadable links under 2GB available.* Try another movie.');
                     }
 
                     // Send download links
                     const downloadMessage = `🎥 *${title}*\n\n` +
                         `*Available Download Links:*\n` +
-                        validLinks.map((link, i) => `*${i + 1}.* ${link.quality} - ${link.size}\n🔗 ${link.link}\n`).join('\n');
+                        validLinks.map((link, i) => `*${i + 1}.* ${link.quality} - ${link.size}\n`).join('\n');
                     const sentDownloadMsg = await conn.sendMessage(from, { text: downloadMessage }, { quoted: mek });
 
                     // Handle quality selection
@@ -193,71 +145,44 @@ cmd({
                         }
 
                         const selectedLink = validLinks[selectedQuality - 1];
-                        let downloadUrl = selectedLink.link;
-                        let isDirectLink = false;
-
-                        // Fetch direct download link
+                        let movieLinkData;
                         try {
-                            const directUrl = `https://api.infinityapi.org/cine-direct-dl?url=${encodeURIComponent(selectedLink.link)}&api=Infinity-FA240F-284CE-FC00-875A7`;
-                            const movieLinkResponse = await fetchWithRetry(directUrl);
-                            const movieLinkData = movieLinkResponse.data;
-                            if (movieLinkData.status && movieLinkData.result?.direct && isValidUrl(movieLinkData.result.direct)) {
-                                downloadUrl = movieLinkData.result.direct;
-                                isDirectLink = true;
-                            } else {
-                                console.warn('No valid direct link, using raw link:', selectedLink.link);
+                            const movieLinkResponse = await fetchWithRetry(
+                                `https://api.infinityapi.org/cine-direct-dl?url=${encodeURIComponent(selectedLink.link)}&api=Infinity-manoj-x-mizta`
+                            );
+                            movieLinkData = movieLinkResponse.data;
+                            if (!movieLinkData.status || !movieLinkData.direct) {
+                                console.error('Invalid link response:', movieLinkData);
+                                return await reply(`*No direct download link available.* Try another quality or movie. Raw link: ${selectedLink.link}`);
                             }
                         } catch (error) {
-                            console.error('Error fetching direct link:', error.message);
-                            await conn.sendMessage(from, {
-                                text: `*Warning: Could not fetch direct download link (${error.message}).* Using raw link instead.\n🔗 ${selectedLink.link}`,
-                            }, { quoted: mek });
+                            console.error('Error fetching download link:', error.message);
+                            return await reply(`*Error fetching download link: ${error.message || 'Please try again.'}* Raw link: ${selectedLink.link}`);
                         }
 
+                        const downloadUrl = movieLinkData.direct;
                         const sendto = isMe ? process.env.MOVIE_JID || from : from;
+
                         await conn.sendMessage(from, { react: { text: '⬇️', key: sentDownloadMsg.key } });
 
                         // Construct caption
                         const caption = `*☘️ 𝗧ɪᴛʟᴇ ➮* *${title}*\n\n` +
                             `*📅 𝗥ᴇʟᴇᴀꜱᴇᴅ ᴅᴀᴛᴇ ➮* ${date || 'N/A'}\n` +
                             `*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* ${country || 'N/A'}\n` +
-                            `*💃 𝗥ᴀᴛɪɴɢ ➮* ${imdbRate || 'N/A'}\n` +
-                            `*⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* ${date || 'N/A'}\n` +
+                            `*💃 �_Rᴀᴛɪɴɢ ➮* ${imdbRate || 'N/A'}\n` +
+                            `*⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* ${duration || 'N/A'}\n` +
                             `*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* ${subtitle || 'N/A'}\n` +
-                            `*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* ${genre || '.NEW, Action, Comedy'}\n` +
-                            `*🔗 𝗟𝗶𝗻𝗸 ➮* ${downloadUrl}\n\n` +
+                            `*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* ${genre || '.NEW, Action, Drama'}\n\n` +
                             `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
-
-                        // File host instructions
-                        let hostInstructions = '';
-                        if (downloadUrl.includes('drive.google.com')) {
-                            hostInstructions = '*Note:* Google Drive link. Open in a browser, click "Download," and follow prompts (e.g., sign-in, CAPTCHA).';
-                        } else if (downloadUrl.includes('mega.nz')) {
-                            hostInstructions = '*Note:* Mega link. Open in a browser, click "Download," and wait (may require a free account).';
-                        } else if (downloadUrl.includes('mediafire.com')) {
-                            hostInstructions = '*Note:* MediaFire link. Open in a browser, click "Download," and bypass ads.';
-                        } else {
-                            hostInstructions = '*Note:* Open the link in a browser and follow the download instructions.';
-                        }
 
                         try {
                             // Verify download URL
-                            const verifyResponse = await axios.head(downloadUrl, { timeout: 10000 });
-                            if (verifyResponse.status !== 200) {
-                                throw new Error(`Download URL inaccessible (status: ${verifyResponse.status})`);
-                            }
-
-                            // Check file size
-                            const contentLength = verifyResponse.headers['content-length'];
-                            if (contentLength && parseInt(contentLength) / (1024 * 1024) > 2000) {
-                                throw new Error('File size exceeds WhatsApp limit (2GB)');
-                            }
-
+                            await fetchWithRetry(downloadUrl);
                             await conn.sendMessage(sendto, {
                                 document: { url: downloadUrl },
-                                mimetype: 'video/mp4',
+                                mimetype: "video/mp4",
                                 fileName: `${title} - ${selectedLink.quality}.mp4`,
-                                caption: `${caption}\n${hostInstructions}`,
+                                caption,
                                 contextInfo: {
                                     mentionedJid: [],
                                     groupMentions: [],
@@ -272,7 +197,7 @@ cmd({
                                         title,
                                         body: 'ʜɪʀᴀɴ ᴍᴅ ᴍᴏᴠɪᴇ',
                                         mediaType: 1,
-                                        sourceUrl: selectedMovie.movie_link,
+                                        sourceUrl: selectedMovie.link,
                                         thumbnailUrl: posterUrl,
                                         renderLargerThumbnail: true,
                                         showAdAttribution: true
@@ -282,21 +207,19 @@ cmd({
                             await conn.sendMessage(from, { react: { text: '✅', key: sentDownloadMsg.key } });
                         } catch (error) {
                             console.error('Error sending file:', error.message);
-                            await conn.sendMessage(from, {
-                                text: `*Error: Unable to send file (${error.message || 'File may be unavailable or too large.'}).*\nTry downloading manually:\n🔗 ${downloadUrl}\n\n${hostInstructions}`,
-                            }, { quoted: mek });
-                            await conn.sendMessage(from, { react: { text: '❌', key: sentDownloadMsg.key } });
+                            await reply(`*Error sending file: ${error.message || 'File may be too large or unavailable.'} Download here: ${downloadUrl}*`);
                         }
                     });
                 } else if (option === '2') {
+                    // Details option
                     const detailsMessage = `*🎥 Movie Details: ${title}*\n\n` +
                         `*📅 Released Date:* ${date || 'N/A'}\n` +
                         `*🌎 Country:* ${country || 'N/A'}\n` +
                         `*💃 IMDb Rating:* ${imdbRate || 'N/A'}\n` +
                         `*⏰ Runtime:* ${duration || 'N/A'}\n` +
                         `*💁‍♂️ Subtitle By:* ${subtitle || 'N/A'}\n` +
-                        `*🎭 Genres:* ${genre || '.NEW, Action, Comedy'}\n` +
-                        `*🔗 Link:* ${selectedMovie.movie_link}\n\n` +
+                        `*🎭 Genres:* ${genre || '.NEW, Action, Drama'}\n` +
+                        `*🔗 Link:* ${selectedMovie.link}\n\n` +
                         `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
                     await conn.sendMessage(from, { text: detailsMessage }, { quoted: mek });
                 } else {
@@ -305,7 +228,7 @@ cmd({
             });
         });
     } catch (error) {
-        console.error('Error during movie search:', error.message);
-        await reply(`*Error: ${error.message || 'An unexpected error occurred.'}*\nTry manual search: curl "https://api.infinityapi.org/cine-movie-search?name=Deadpool%20%26%20Wolverine&api=Infinity-FA240F-284CE-FC00-875A7"`);
+        console.error('Error during CineSubz search:', error.message);
+        await reply(`*Error: ${error.message || 'An unexpected error occurred.'}*`);
     }
 });
