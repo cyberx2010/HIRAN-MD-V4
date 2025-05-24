@@ -1,43 +1,64 @@
+const { fetchJson, sleep } = require('../lib/functions');
 const axios = require('axios');
 const { cmd } = require('../command');
 require('dotenv').config();
 
-const API_KEY = process.env.INFINITY_API_KEY || 'Infinity-FA240F-284CE-FC00-875A7';
+// Helper: Retry API Calls
+const fetchWithRetry = async (url, retries = 3, backoff = 1000) => {
+    try {
+        const response = await axios.get(url, { timeout: 10000 });
+        console.log(`API Response for ${url}:`, JSON.stringify(response.data, null, 2)); // Debug log
+        return response;
+    } catch (error) {
+        if (retries === 0 || (error.response && error.response.status !== 429)) {
+            throw new Error(`Failed to fetch ${url}: ${error.message}`);
+        }
+        await sleep(backoff);
+        return fetchWithRetry(url, retries - 1, backoff * 2);
+    }
+};
 
+// Helper: Validate File Size
+const validateFileSize = (size) => {
+    if (!size || typeof size !== 'string') return true; // Assume valid if unknown
+    const match = size.match(/(\d*\.?\d+)\s*(GB|MB)/i);
+    if (!match) return true;
+    const value = parseFloat(match[1]);
+    const unit = match[2].toUpperCase();
+    const sizeMB = unit === 'GB' ? value * 1024 : value;
+    return sizeMB <= 2000; // WhatsApp limit ~2GB
+};
+
+// CineSubz Command
 cmd({
-    pattern: 'cinesubz',
-    alias: ['cine'],
-    react: '🎬',
-    category: 'movie',
-    desc: 'Search and download movies using Infinity API',
+    pattern: "cinesubz",
+    alias: ["cine"],
+    react: "🎬",
+    category: "movie",
+    desc: "Search and download movies from CineSubz",
     filename: __filename
 }, async (conn, mek, m, { from, q, reply, isMe }) => {
     try {
+        // Validate input query
         if (!q || !/^[a-zA-Z0-9\s]+$/.test(q)) {
             return await reply('*Please provide a valid movie name to search! (e.g., Avatar)*');
         }
 
         await conn.sendMessage(from, { react: { text: '🔍', key: mek.key } });
 
-        // Search movies
-        const searchResponse = await axios.get('[invalid url, do not cite]') 
-            headers: { Authorization: `Bearer ${API_KEY}` },
-            params: { name: q },
-            timeout: 10000
-        });
+        // Search movies from CineSubz API
+        const searchResponse = await fetchWithRetry(
+            `https://cinesubz-api-zazie.vercel.app/api/search?q=${encodeURIComponent(q)}`
+        );
         const searchData = searchResponse.data;
 
-        if (!searchData.status || !searchData.results?.length) {
+        if (!searchData.status || !searchData.result?.data?.length) {
             return await reply(`*No results found for:* "${q}"`);
         }
 
-        const searchResults = searchData.results.slice(0, 20); // Show 20 results for interactivity
-        const numberEmojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"];
+        const searchResults = searchData.result.data.slice(0, 10);
         const resultsMessage = `*𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐂𝐈𝐍𝐄𝐒𝐔𝐁𝐙 𝐒𝐄𝐀𝐑𝐂𝐇*\n\n🎥 *Search Results for* "${q}":\n\n` +
-            searchResults.map((r, i) => {
-                const emojiIndex = (i + 1).toString().split("").map(num => numberEmojis[num]).join("");
-                return `${emojiIndex} *${r.title} (${r.year || 'N/A'})*\n🔗 Link: ${r.link || 'N/A'}\n\n`;
-            }).join('');
+            searchResults.map((r, i) => `*${i + 1}.* ${r.title} (${r.year})\n🔗 Link: ${r.link}\n`).join('\n');
 
         await sleep(2000); // Delay for better UX
         const sentMsg = await conn.sendMessage(from, { text: resultsMessage }, { quoted: mek });
@@ -52,25 +73,24 @@ cmd({
             const selectedMovie = searchResults[selectedNumber - 1];
             let movieData;
             try {
-                const movieResponse = await axios.get('[invalid url, do not cite] {
-                    headers: { Authorization: `Bearer ${API_KEY}` },
-                    params: { url: selectedMovie.link },
-                    timeout: 10000
-                });
+                const movieResponse = await fetchWithRetry(
+                    `https://cinesubz-api-zazie.vercel.app/api/movie?url=${encodeURIComponent(selectedMovie.link)}`
+                );
                 movieData = movieResponse.data;
-                if (!movieData.status || !movieData.data) throw new Error('Invalid movie data');
+                if (!movieData.status || !movieData.result.data) throw new Error('Invalid movie data');
             } catch (error) {
                 console.error('Error fetching movie details:', error.message);
                 return await reply(`*Error fetching movie details: ${error.message || 'Please try again.'}*`);
             }
 
-            const { title, year, image, description, rating, genres, dl_links } = movieData.data;
+            const { title, imdbRate, image, date, country, duration, dl_links, subtitle, genre } = movieData.result.data;
 
-            // Send movie menu with poster for interactivity
-            const posterUrl = image || process.env.ALIVE_IMG || '[invalid url, do not cite]
-            const menuMessage = `*🎥 ${title} (${year || 'N/A'})*\n\n` +
+            // Send movie menu with poster
+            const year = date?.match(/\d{4}/)?.[0] || 'N/A';
+            const posterUrl = image || 'https://files.catbox.moe/lacqi4.jpg';
+            const menuMessage = `*🎥 ${title} (${year})*\n\n` +
                 `🔢 *Reply with:*\n*1.* Download\n*2.* Details\n\n` +
-                `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱ𝙰ʀ𝙰`;
+                `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
             const menuMsg = await conn.sendMessage(from, {
                 image: { url: posterUrl },
                 caption: menuMessage,
@@ -88,7 +108,7 @@ cmd({
                         title,
                         body: 'ʜɪʀᴀɴ ᴍᴅ ᴍᴏᴠɪᴇ',
                         mediaType: 1,
-                        sourceUrl: selectedMovie.link || '[invalid url, do not cite]
+                        sourceUrl: selectedMovie.link,
                         thumbnailUrl: posterUrl,
                         renderLargerThumbnail: true,
                         showAdAttribution: true
@@ -111,13 +131,10 @@ cmd({
                         return await reply('*No downloadable links under 2GB available.* Try another movie.');
                     }
 
-                    // Send download links with interactive format
+                    // Send download links
                     const downloadMessage = `🎥 *${title}*\n\n` +
                         `*Available Download Links:*\n` +
-                        validLinks.map((link, i) => {
-                            const emojiIndex = (i + 1).toString().split("").map(num => numberEmojis[num]).join("");
-                            return `${emojiIndex} *${link.quality} - ${link.size}*\n`;
-                        }).join('\n');
+                        validLinks.map((link, i) => `*${i + 1}.* ${link.quality} - ${link.size}\n`).join('\n');
                     const sentDownloadMsg = await conn.sendMessage(from, { text: downloadMessage }, { quoted: mek });
 
                     // Handle quality selection
@@ -130,13 +147,11 @@ cmd({
                         const selectedLink = validLinks[selectedQuality - 1];
                         let movieLinkData;
                         try {
-                            const movieLinkResponse = await axios.get('[invalid url, do not cite] {
-                                headers: { Authorization: `Bearer ${API_KEY}` },
-                                params: { url: selectedLink.link },
-                                timeout: 10000
-                            });
+                            const movieLinkResponse = await fetchWithRetry(
+                                `https://cinesubz-api-zazie.vercel.app/api/links?url=${encodeURIComponent(selectedLink.link)}`
+                            );
                             movieLinkData = movieLinkResponse.data;
-                            if (!movieLinkData.status || !movieLinkData.link) {
+                            if (!movieLinkData.status || !movieLinkData.result?.direct) {
                                 console.error('Invalid link response:', movieLinkData);
                                 return await reply(`*No direct download link available.* Try another quality or movie. Raw link: ${selectedLink.link}`);
                             }
@@ -145,25 +160,24 @@ cmd({
                             return await reply(`*Error fetching download link: ${error.message || 'Please try again.'}* Raw link: ${selectedLink.link}`);
                         }
 
-                        const downloadUrl = movieLinkData.link;
+                        const downloadUrl = movieLinkData.result.direct;
                         const sendto = isMe ? process.env.MOVIE_JID || from : from;
 
                         await conn.sendMessage(from, { react: { text: '⬇️', key: sentDownloadMsg.key } });
 
-                        // Construct caption with movie details and image context
+                        // Construct caption
                         const caption = `*☘️ 𝗧ɪᴛʟᴇ ➮* *${title}*\n\n` +
                             `*📅 𝗥ᴇʟᴇᴀꜱᴇᴅ ᴅᴀᴛᴇ ➮* ${date || 'N/A'}\n` +
                             `*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* ${country || 'N/A'}\n` +
-                            `*💃 𝗥ᴀᴛɪɴɢ ➮* ${rating || 'N/A'}\n` +
+                            `*💃 �_Rᴀᴛɪɴɢ ➮* ${imdbRate || 'N/A'}\n` +
                             `*⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* ${duration || 'N/A'}\n` +
                             `*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* ${subtitle || 'N/A'}\n` +
-                            `*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* ${genres?.join(', ') || '.NEW, Action, Drama'}\n\n` +
-                            `⚠️ *Warning*: Ensure you have permission to download this content.\n` +
-                            `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱ𝙰ʀ𝙰`;
+                            `*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* ${genre || '.NEW, Action, Drama'}\n\n` +
+                            `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
 
                         try {
                             // Verify download URL
-                            await fetchWithRetry(downloadUrl, {});
+                            await fetchWithRetry(downloadUrl);
                             await conn.sendMessage(sendto, {
                                 document: { url: downloadUrl },
                                 mimetype: "video/mp4",
@@ -183,7 +197,7 @@ cmd({
                                         title,
                                         body: 'ʜɪʀᴀɴ ᴍᴅ ᴍᴏᴠɪᴇ',
                                         mediaType: 1,
-                                        sourceUrl: selectedMovie.link || '[invalid url, do not cite]
+                                        sourceUrl: selectedMovie.link,
                                         thumbnailUrl: posterUrl,
                                         renderLargerThumbnail: true,
                                         showAdAttribution: true
@@ -201,36 +215,13 @@ cmd({
                     const detailsMessage = `*🎥 Movie Details: ${title}*\n\n` +
                         `*📅 Released Date:* ${date || 'N/A'}\n` +
                         `*🌎 Country:* ${country || 'N/A'}\n` +
-                        `*💃 IMDb Rating:* ${rating || 'N/A'}\n` +
+                        `*💃 IMDb Rating:* ${imdbRate || 'N/A'}\n` +
                         `*⏰ Runtime:* ${duration || 'N/A'}\n` +
                         `*💁‍♂️ Subtitle By:* ${subtitle || 'N/A'}\n` +
-                        `*🎭 Genres:* ${genres?.join(', ') || '.NEW, Action, Drama'}\n` +
-                        `*🔗 Link:* ${selectedMovie.link || 'N/A'}\n\n` +
-                        `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱ𝙰ʀ𝙰`;
-                    await conn.sendMessage(from, {
-                        image: { url: posterUrl },
-                        caption: detailsMessage,
-                        contextInfo: {
-                            mentionedJid: [],
-                            groupMentions: [],
-                            forwardingScore: 999,
-                            isForwarded: true,
-                            forwardedNewsletterMessageInfo: {
-                                newsletterJid: '120363401446603948@newsletter',
-                                newsletterName: '𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 💚',
-                                serverMessageId: 999
-                            },
-                            externalAdReply: {
-                                title,
-                                body: 'ʜɪʀᴀɴ ᴍᴅ ᴍᴏᴠɪᴇ',
-                                mediaType: 1,
-                                sourceUrl: selectedMovie.link || '[invalid url, do not cite]
-                                thumbnailUrl: posterUrl,
-                                renderLargerThumbnail: true,
-                                showAdAttribution: true
-                            }
-                        }
-                    }, { quoted: mek });
+                        `*🎭 Genres:* ${genre || '.NEW, Action, Drama'}\n` +
+                        `*🔗 Link:* ${selectedMovie.link}\n\n` +
+                        `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
+                    await conn.sendMessage(from, { text: detailsMessage }, { quoted: mek });
                 } else {
                     await reply('Invalid option. Please reply with 1 or 2.');
                 }
