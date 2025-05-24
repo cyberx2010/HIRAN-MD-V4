@@ -27,7 +27,7 @@ async (conn, mek, m, { from, q, reply, prefix, replyMap }) => {
     items.forEach((item, i) => {
       responseText += `${i + 1}. *${item.title}* (${item.date || 'No date'})\n🔗 Reply with ${i + 1} to select\n\n`;
     });
-    responseText += `> Reply with the number of the movie to get details.\n> © Powered by HIRAN MD V4`;
+    responseText += `> Reply with the number of the movie to get details.\n> © Powered by ${config.BOT_NAME || 'HIRAN MD V4'}`;
 
     const sentMessage = await conn.sendMessage(from, {
       text: responseText,
@@ -42,11 +42,11 @@ async (conn, mek, m, { from, q, reply, prefix, replyMap }) => {
         await conn.sendMessage(from, {
           text: `Selected: *${selectedItem.title}*\nProcessing details...`,
           react: { text: '🔎', key: m.key }
-        });
+        }, { quoted: m });
         // Trigger sub_search command
         await conn.sendMessage(from, {
           text: `${prefix}sub_search ${selectedItem.link}`
-        });
+        }, { quoted: m });
       } else {
         await conn.sendMessage(from, {
           text: `Invalid number. Please reply with a number between 1 and ${items.length}`
@@ -81,12 +81,12 @@ async (conn, mek, m, { from, q, reply, prefix }) => {
 *💃 �_Rᴀᴛɪɴɢ ➮* _${data.tmdbRate || data.imdb || "N/A"}_
 *⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* _${data.runtime || "N/A"}_
 *💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* _${data.subtitle_author || data.subtitle || "N/A"}_
-*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* _${data.category?.join(", ") || data.genre || ".NEW, Action, Drama"}_
+*🎭 �_Gᴇɴᴀʀᴇꜱ ➮* _${data.category?.join(", ") || data.genre || ".NEW, Action, Drama"}_
 
 🧾 *Description:* 
 ${data.description || "No description available"}
 
-> ⚜️ 𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝 - HIRAN MD V4 𝐁𝐘 𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀
+> ⚜️ 𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝 - ${config.BOT_NAME || 'HIRAN MD V4'} 𝐁𝐘 𝐇𝐈𝐑𝐀𝐍𝐘𝐀 𝐒𝐀𝐓𝐇𝐒𝐀𝐑𝐀
 `.trim();
 
     const sections = [];
@@ -106,7 +106,7 @@ ${data.description || "No description available"}
       const ddlRows = data.ddl_dl.map(item => ({
         title: `${item.quality} (${item.size})`,
         rowId: `${prefix}sub_dl ddl|${item.link}`
-      });
+      }));
       sections.push({
         title: "📥 DDL",
         rows: ddlRows
@@ -119,7 +119,7 @@ ${data.description || "No description available"}
 
     await conn.sendMessage(from, {
       text: caption,
-      footer: "> © Powered by HIRAN MD V4",
+      footer: `> © Powered by ${config.BOT_NAME || 'HIRAN MD V4'}`,
       title: "Download Links",
       buttonText: "`Reply Below Number` 🔢",
       sections,
@@ -147,7 +147,7 @@ async (conn, mek, m, { q, reply }) => {
     await conn.sendMessage(m.chat, {
       document: { url: link },
       mimetype: 'video/mp4',
-      fileName: `HIRAN-MD-V4-SINHALASUB-${type.toUpperCase()}.mp4`,
+      fileName: `${config.BOT_NAME || 'HIRAN-MD-V4'}-SINHALASUB-${type.toUpperCase()}.mp4`,
       caption: `Downloaded ${type} subtitle file`
     }, { quoted: mek });
 
