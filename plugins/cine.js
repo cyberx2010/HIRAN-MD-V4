@@ -74,7 +74,7 @@ cmd({
             let movieData;
             try {
                 const movieResponse = await fetchWithRetry(
-                    `https://cinesubz-api-zazie.vercel.app/api/movie?url=${encodeURIComponent(selectedMovie.link)}`
+                    `https://api.infinityapi.org/cine-minfo?url=${encodeURIComponent(selectedMovie.link)}&api=Infinity-manoj-x-mizta`
                 );
                 movieData = movieResponse.data;
                 if (!movieData.status || !movieData.result.data) throw new Error('Invalid movie data');
@@ -170,7 +170,7 @@ cmd({
                             `*📅 𝗥ᴇʟᴇᴀꜱᴇᴅ ᴅᴀᴛᴇ ➮* ${date || 'N/A'}\n` +
                             `*🌎 𝗖ᴏᴜɴᴛʀʏ ➮* ${country || 'N/A'}\n` +
                             `*💃 �_Rᴀᴛɪɴɢ ➮* ${imdbRate || 'N/A'}\n` +
-                            `*⏰ 𝗥ᴜɴᴛɪᴍᴇ ➮* ${duration || 'N/A'}\n` +
+                            `*⏰ �_Rᴜɴᴛɪᴍᴇ ➮* ${duration || 'N/A'}\n` +
                             `*💁‍♂️ 𝗦ᴜʙᴛɪᴛʟᴇ ʙʏ ➮* ${subtitle || 'N/A'}\n` +
                             `*🎭 𝗚ᴇɴᴀʀᴇꜱ ➮* ${genre || '.NEW, Action, Drama'}\n\n` +
                             `> ⚜️ ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
