@@ -44,3 +44,72 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
         await reply(`*Error: ${e.message || 'Something went wrong!'}*`);
     }
 });
+
+
+
+//_______________________________________________INFO
+
+cmd({
+    pattern: "cinedl",	
+    dontAddCommandList: true,
+    react: '🎥',
+    desc: "moive downloader",
+    filename: __filename
+},
+async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
+try{
+
+
+     if(!q) return await reply('*please give me url!..*')
+
+
+let res = await fetchJson(`https://cinesub-info.vercel.app/?url=${q}&apikey=dinithimegana`)
+
+
+	let cap = `*☘️ Tιтle ➜* *${res.data.title}*
+
+*📆 Rᴇʟᴇᴀꜱᴇ ➜* _${res.data.date}_
+*⭐ Rᴀᴛɪɴɢ ➜* _${res.data.imdb}_
+*⏰ Rᴜɴᴛɪᴍᴇ ➜* _${res.data.runtime}_
+*🌎 Cᴏᴜɴᴛʀʏ ➜* _${res.data.country}_
+*💁‍♂️ Dɪʀᴇᴄᴛᴏʀ ➜* _${res.data.subtitle_author}_
+`
+
+
+
+if (res.length < 1) return await conn.sendMessage(from, { text: 'erro !' }, { quoted: mek } )
+
+
+
+const sections = [];
+
+    if (Array.isArray(res.dl_links)) {
+      const cinesubzRows = res.dl_links.map(item => ({
+        title: `${v.quality} (${v.size})`,
+        rowId: `${prefix}cinedl ${res.data.image}±${v.link}±${res.data.title}
+	
+	*\`${v.quality}\`*`
+      }));
+      sections.push({
+        title: "🎬 Cinesubz",
+        rows: cinesubzRows
+      });
+    }
+
+
+  
+const listMessage = {
+ 
+image: {url: res.data.image.replace("fit=", "")},	
+      text: cap,
+      footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄,
+      title: "📥 Download Option",
+      buttonText: "*Reply Below Number 🔢,",
+      sections
+}
+return await conn.replyList(from, listMessage, mek)
+} catch (e) {
+    console.log(e)
+  await conn.sendMessage(from, { text: '🚩 *Error !!*' }, { quoted: mek } )
+}
+})
