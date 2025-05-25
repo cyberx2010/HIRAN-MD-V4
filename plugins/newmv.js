@@ -1,56 +1,53 @@
 const config = require('../config');
 const { cmd } = require('../command');
 const { fetchJson } = require('../lib/functions');
-const { setCineCache } = require('./cineinfo');
-setCineCache(sender, res.data);
 
+let cineCache = {}; // Global cache used by both commands
+
+// .cine command
 cmd({
-pattern: "cine",
-react: '🔎',
-category: "movie",
-alias: ["cinesubz,cinesub"],
-desc: "Movie downloader with Sinhala subtitles",
-filename: __filename
+    pattern: "cine",
+    react: '🔎',
+    category: "movie",
+    alias: ["cinesubz", "cinesub"],
+    desc: "Movie downloader with Sinhala subtitles",
+    filename: __filename
 },
-async (conn, m, mek, { from, q, prefix, reply }) => {
-try {
-if (!q) return await reply('Please provide a search query!');
+async (conn, m, mek, { from, q, prefix, reply, sender }) => {
+    try {
+        if (!q) return await reply('*Please provide a search query!*');
 
-// Fetch movie data from API  
-    const apiUrl = config.CINE_API_URL || 'https://darksadas-yt-cinezub-search.vercel.app/';  
-    const res = await fetchJson(`${apiUrl}?query=${encodeURIComponent(q)}`);  
+        const apiUrl = config.CINE_API_URL || 'https://darksadas-yt-cinezub-search.vercel.app/';
+        const res = await fetchJson(`${apiUrl}?query=${q}`); // raw query (no encode)
 
-    // Validate API response  
-    if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {  
-        return await reply('*No movies found for your query!*');  
-    }  
+        if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
+            return await reply('*No movies found for your query!*');
+        }
 
-    // Construct the result message  
-    let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙑𝙄𝙀 𝙍𝙀𝙎𝙇𝙐𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;  
-    res.data.forEach((item, index) => {  
-        const title = item.title || 'Unknown Title';  
-        const year = item.year || 'N/A'; // Adjust based on API response  
-        resultText += `*${index + 1} ||* ${title} (${year}) Sinhala Subtitles | සිංහල උපසිරසි සමඟ\n`;  
-    });  
-    resultText += `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`;  
+        cineCache[sender] = res.data;
 
-    // Send the image with the caption  
-    const imageUrl = 'https://files.catbox.moe/4fsn8g.jpg';  
-    await conn.sendMessage(from, {  
-        image: { url: imageUrl },  
-        caption: resultText  
-    }, { quoted: mek });  
+        let resultText = `*🔎 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply with a number to get movie details and download links.*\n\n`;
+        res.data.forEach((item, index) => {
+            const title = item.title || 'Unknown Title';
+            const year = item.year || 'N/A';
+            resultText += `*${index + 1}.* ${title} (${year}) Sinhala Sub | සිංහල උපසිරැසි\n`;
+        });
+        resultText += `\n> ʜɪʀᴀɴᴍᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ`;
 
-} catch (e) {  
-    console.error('Error in cine command:', e);  
-    await reply(`*Error: ${e.message || 'Something went wrong!'}*`);  
-}
+        const previewImage = 'https://files.catbox.moe/4fsn8g.jpg';
+        await conn.sendMessage(from, {
+            image: { url: previewImage },
+            caption: resultText
+        }, { quoted: mek });
 
+    } catch (e) {
+        console.error('Error in .cine command:', e);
+        await reply(`*Error: ${e.message || 'Something went wrong!'}*`);
+    }
 });
 
 
-let cineCache = {}; // cache per user
-
+// .cineinfo command
 cmd({
     pattern: "cineinfo",
     react: '🎬',
@@ -61,16 +58,16 @@ cmd({
 }, async (conn, m, mek, { from, q, reply, sender }) => {
     try {
         const numberReply = parseInt(q || m.text.trim());
-        if (isNaN(numberReply)) return await reply('*Please provide a valid movie number from previous .cine search.*');
+        if (isNaN(numberReply)) return await reply('*Please reply with a valid movie number from search result.*');
 
         const selectedIndex = numberReply - 1;
         if (!cineCache[sender] || !cineCache[sender][selectedIndex]) {
-            return await reply('*No movie cached for your number. Please search again using .cine <movie>*');
+            return await reply('*Movie not found in memory. Please search again using .cine <name>*');
         }
 
         const movie = cineCache[sender][selectedIndex];
         const detailUrl = movie.movieLink;
-        if (!detailUrl) return await reply('*Movie link is missing!*');
+        if (!detailUrl) return await reply('*Movie link not found!*');
 
         const apiUrl = `https://api.infinityapi.org/cine-minfo?url=${detailUrl}&api=Infinity-manoj-x-mizta`;
         const info = await fetchJson(apiUrl);
@@ -101,12 +98,7 @@ cmd({
         }, { quoted: mek });
 
     } catch (e) {
-        console.error('cineinfo plugin error:', e);
-        await reply(`*Error:* ${e.message || 'Unexpected error occurred!'}`);
+        console.error('Error in .cineinfo command:', e);
+        await reply(`*Error:* ${e.message || 'Something went wrong!'}`);
     }
 });
-
-// Needed in .cine plugin
-module.exports.setCineCache = (sender, data) => {
-    cineCache[sender] = data;
-};
