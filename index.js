@@ -98,7 +98,7 @@ async function connectToWA() {
       console.log('Plugins installed successful ✅');
       console.log('Bot connected to whatsapp ✅');
 
-      const up = `╭━━━〔 HIRAN  MD  V4 〕━━━╮
+      const up = `╭━━━〔 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐕4 〕━━━╮
 
 ┃
 ┃ 🤖 HIRAN MD OFFICIAL
