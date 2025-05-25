@@ -11,7 +11,7 @@ cmd({
   try {
     // Validate URL
     if (!q || !q.match(/^(https?:\/\/)(www\.)?(facebook\.com|fb\.watch|m\.facebook\.com)/)) {
-      return reply("*`Please provide a valid Facebook video URL! Example: fb <url>`*");
+      return reply("*`Please provide a valid Facebook video URL!`*");
     }
 
     await conn.sendMessage(from, { react: { text: '⏳', key: m.key } });
@@ -25,42 +25,11 @@ cmd({
       throw new Error("Invalid API response structure.");
     }
 
-    // Get available qualities
-    const videos = data.content.data.result;
-    if (!videos.length) {
-      throw new Error("No valid video URL found.");
-    }
+    // Select video (prefer HD or SD, fallback to first available)
+    const videoData = data.content.data.result.find(v => ["HD", "SD"].includes(v.quality)) || 
+                      data.content.data.result[0];
 
-    // Create numbered list of qualities
-    const qualityList = videos.map((v, i) => `${i + 1}. ${v.quality || 'Unknown'}`).join('\n');
-    const listMessage = await conn.sendMessage(from, {
-      text: `📋 *Available Qualities:*\n${qualityList}\n\nReply with the number of your preferred quality (e.g., 1 or 2).`,
-      quoted: m
-    });
-
-    // Wait for user reply (timeout: 30 seconds)
-    const replyTimeout = 30000; // 30 seconds
-    let selectedVideo;
-    try {
-      const userReply = await conn.waitForReply(from, listMessage.key, replyTimeout);
-      const selectedNumber = parseInt(userReply.message?.conversation?.trim());
-      
-      if (!isNaN(selectedNumber) && selectedNumber > 0 && selectedNumber <= videos.length) {
-        selectedVideo = videos[selectedNumber - 1];
-      } else {
-        throw new Error("Invalid number selected.");
-      }
-    } catch (replyError) {
-      // Fallback to HD, then SD, then first available if no valid reply
-      selectedVideo = videos.find(v => v.quality.toLowerCase() === "hd") || 
-                     videos.find(v => v.quality.toLowerCase() === "sd") || 
-                     videos[0];
-      await conn.sendMessage(from, {
-        text: `⚠️ *No valid reply received, defaulting to ${selectedVideo.quality || 'available'} quality.*`
-      }, { quoted: m });
-    }
-
-    if (!selectedVideo?.url) {
+    if (!videoData?.url) {
       throw new Error("No valid video URL found.");
     }
 
@@ -80,8 +49,8 @@ cmd({
 
     // Send video with thumbnail
     await conn.sendMessage(from, {
-      video: { url: selectedVideo.url },
-      caption: `📥 *Downloaded in ${selectedVideo.quality || 'Unknown'} Quality*\n\n🔗 *Powered By ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*`,
+      video: { url: videoData.url },
+      caption: `📥 *Downloaded in ${videoData.quality} Quality*\n\n🔗 *> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*`,
       jpegThumbnail: thumbnailBuffer // Include thumbnail if available
     }, { quoted: m });
 
@@ -101,8 +70,6 @@ cmd({
       ? "❌ *Error:* Invalid response from the server."
       : error.message.includes("No valid video") 
       ? "❌ *Error:* No downloadable video found in the provided URL."
-      : error.message.includes("Invalid number") 
-      ? "❌ *Error:* Invalid number selected. Please reply with a valid number."
       : "❌ *Error:* Unable to process the request. Please try again later.";
     reply(errorMsg);
   }
