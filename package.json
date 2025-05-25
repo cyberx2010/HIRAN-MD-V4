@@ -48,8 +48,8 @@
     "puppeteer": "^24.9.0",
     "human-readable": "^0.2.1",
     "mime-types": "^3.0.1",
-    "@mrnima/tiktok-downloader": "^1.0.3",
-    "@mrnima/facebook-downloader": "^1.0.2",
-    "ruhend-scraper": "^1.0.0"
+    "@mrnima/tiktok-downloader": "^1.0.0",
+    "@mrnima/facebook-downloader": "^1.0.0",
+    "ruhend-scraper": "^9.0.1"
   }
 }
