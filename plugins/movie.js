@@ -1,109 +1,279 @@
 const { cmd } = require('../command');
 const { fetchJson } = require('../lib/functions');
 const axios = require('axios');
-const fs = require('fs-extra');
-const path = require('path');
-const config = require('../config');
-
-const API_URL = "https://api.skymansion.site/movies-dl/search";
-const DOWNLOAD_URL = "https://api.skymansion.site/movies-dl/download";
-const API_KEY = config.MOVIE_API_KEY;
 
 cmd({
-    pattern: "movie",
-    alias: ["moviedl", "films"],
-    react: '🎬',
-    category: "download",
-    desc: "Search and download movies from PixelDrain",
-    filename: __filename
-}, async (robin, m, mek, { from, q, reply }) => {
-    try {
-        if (!q || q.trim() === '') return await reply('❌ Please provide a movie name! (e.g., Deadpool)');
-
-        // Fetch movie search results
-        const searchUrl = `${API_URL}?q=${encodeURIComponent(q)}&api_key=${API_KEY}`;
-        let response = await fetchJson(searchUrl);
-
-        if (!response || !response.SearchResult || !response.SearchResult.result.length) {
-            return await reply(`❌ No results found for: *${q}*`);
-        }
-
-        const selectedMovie = response.SearchResult.result[0]; // Select first result
-        const detailsUrl = `${DOWNLOAD_URL}/?id=${selectedMovie.id}&api_key=${API_KEY}`;
-        let detailsResponse = await fetchJson(detailsUrl);
-
-        if (!detailsResponse || !detailsResponse.downloadLinks || !detailsResponse.downloadLinks.result.links.driveLinks.length) {
-            return await reply('❌ No PixelDrain download links found.');
-        }
-
-        // Select the 720p PixelDrain link
-        const pixelDrainLinks = detailsResponse.downloadLinks.result.links.driveLinks;
-        const selectedDownload = pixelDrainLinks.find(link => link.quality === "SD 480p");
-        
-        if (!selectedDownload || !selectedDownload.link.startsWith('http')) {
-            return await reply('❌ No valid 480p PixelDrain link available.');
-        }
-
-        // Convert to direct download link
-        const fileId = selectedDownload.link.split('/').pop();
-        const directDownloadLink = `https://pixeldrain.com/api/file/${fileId}?download`;
-        
-        
-        // Download movie
-        const filePath = path.join(__dirname, `${selectedMovie.title}-480p.mp4`);
-        const writer = fs.createWriteStream(filePath);
-        
-        const { data } = await axios({
-            url: directDownloadLink,
-            method: 'GET',
-            responseType: 'stream'
-        });
-
-        data.pipe(writer);
-
-        writer.on('finish', async () => {
-            await robin.sendMessage(from, {
-                document: fs.readFileSync(filePath),
-                mimetype: 'video/mp4',
-                fileName: `${selectedMovie.title}-480p.mp4`,
-                caption: `🎬 *${selectedMovie.title}*\n📌 Quality: 480p\n✅ *Download Complete!*`,
-                quoted: mek 
-            });
-            fs.unlinkSync(filePath);
-        });
-
-        writer.on('error', async (err) => {
-            console.error('Download Error:', err);
-            await reply('❌ Failed to download movie. Please try again.');
-        });
-    } catch (error) {
-        console.error('Error in movie command:', error);
-        await reply('❌ Sorry, something went wrong. Please try again later.');
+  pattern: "sinhalasub",
+  alias: ["movie", "tvshow"],
+  react: '📑',
+  category: "download",
+  desc: "Search movies or TV shows on SinhalaSub and get download links",
+  filename: __filename
+}, async (client, message, msgInfo, { from, q, reply }) => {
+  try {
+    if (!q) {
+      return await reply("*Please provide a search query! (e.g., Deadpool or Game of Thrones)*");
     }
+
+    // Search for movies or TV shows
+    const searchUrl = `https://suhas-bro-api.vercel.app/movie/sinhalasub/search?text=${encodeURIComponent(q)}`;
+    const searchResponse = await axios.get(searchUrl);
+    const searchResults = searchResponse.data.result || [];
+    const limitedResults = searchResults.slice(0, 10);
+
+    if (!limitedResults.length) {
+      return await reply(`No results found for: ${q}`);
+    }
+
+    // Construct search results message with image
+    let responseText = `📽️ *Search Results for* "${q}":\n\n`;
+    limitedResults.forEach((result, index) => {
+      responseText += `*${index + 1}.* ${result.title} (${result.type === 'movie' ? 'Movie' : 'TV Show'})\n🔗 Link: ${result.link}\n\n`;
+    });
+
+    // Send search results with the provided image
+    const sentMessage = await client.sendMessage(from, {
+      text: responseText,
+      contextInfo: {
+        mentionedJid: [],
+        externalAdReply: {
+          title: `SinhalaSub Search: ${q}`,
+          body: "Powered by SinhalaSub",
+          mediaType: 1,
+          thumbnailUrl: 'https://files.catbox.moe/4fsn8g.jpg', // Add image to search results
+          sourceUrl: 'https://sinhalasub.lk'
+        }
+      }
+    }, { quoted: msgInfo });
+    const sentMessageId = sentMessage.key.id;
+
+    // Handle user selection
+    client.ev.on("messages.upsert", async event => {
+      const newMessage = event.messages[0];
+      if (!newMessage.message) return;
+
+      const userMessage = newMessage.message.conversation || newMessage.message.extendedTextMessage?.text;
+      const isReplyToSearch = newMessage.message.extendedTextMessage && newMessage.message.extendedTextMessage.contextInfo.stanzaId === sentMessageId;
+
+      if (isReplyToSearch) {
+        const selectedNumber = parseInt(userMessage.trim());
+        if (isNaN(selectedNumber) || selectedNumber < 1 || selectedNumber > limitedResults.length) {
+          return await reply("Invalid selection. Please reply with a valid number.");
+        }
+
+        const selectedItem = limitedResults[selectedNumber - 1];
+        const isMovie = selectedItem.type === 'movie';
+
+        if (isMovie) {
+          // Fetch movie details
+          const movieUrl = `https://suhas-bro-api.vercel.app/movie/sinhalasub/movie?url=${encodeURIComponent(selectedItem.link)}`;
+          try {
+            const movieResponse = await axios.get(movieUrl);
+            const movieDetails = movieResponse.data.result;
+            const downloadLinks = movieDetails.dl_links || [];
+
+            if (!downloadLinks.length) {
+              return await reply("No PixelDrain links found for this movie.");
+            }
+
+            let downloadText = `🎥 *${movieDetails.title}*\n\n*Available PixelDrain Download Links:*\n`;
+            downloadLinks.forEach((link, index) => {
+              downloadText += `*${index + 1}.* ${link.quality} - ${link.size}\n🔗 Link: ${link.link}\n\n`;
+            });
+
+            const downloadMessage = await client.sendMessage(from, {
+              text: downloadText,
+              contextInfo: {
+                mentionedJid: [],
+                externalAdReply: {
+                  title: movieDetails.title,
+                  body: "Download powered by SinhalaSub",
+                  mediaType: 1,
+                  thumbnailUrl: movieDetails.image || 'https://files.catbox.moe/4fsn8g.jpg', // Fallback to provided image
+                  sourceUrl: selectedItem.link
+                }
+              }
+            }, { quoted: newMessage });
+            const downloadMessageId = downloadMessage.key.id;
+
+            // Handle download selection
+            client.ev.on('messages.upsert', async event => {
+              const downloadReply = event.messages[0];
+              if (!downloadReply.message) return;
+
+              const downloadReplyText = downloadReply.message.conversation || downloadReply.message.extendedTextMessage?.text;
+              const isReplyToDownload = downloadReply.message.extendedTextMessage && downloadReply.message.extendedTextMessage.contextInfo.stanzaId === downloadMessageId;
+
+              if (isReplyToDownload) {
+                const downloadNumber = parseInt(downloadReplyText.trim());
+                if (isNaN(downloadNumber) || downloadNumber < 1 || downloadNumber > downloadLinks.length) {
+                  return await reply("Invalid selection. Please reply with a valid number.");
+                }
+
+                const selectedLink = downloadLinks[downloadNumber - 1];
+                const fileId = selectedLink.link.split('/').pop();
+                const fileUrl = `https://pixeldrain.com/api/file/${fileId}`;
+
+                await client.sendMessage(from, { react: { text: '⬇️', key: msgInfo.key } });
+                await client.sendMessage(from, {
+                  document: { url: fileUrl },
+                  mimetype: "video/mp4",
+                  fileName: `${movieDetails.title} - ${selectedLink.quality}.mp4`,
+                  caption: `${movieDetails.title}\nQuality: ${selectedLink.quality}\nPowered by SinhalaSub`,
+                  contextInfo: {
+                    mentionedJid: [],
+                    externalAdReply: {
+                      title: movieDetails.title,
+                      body: "Download powered by SinhalaSub",
+                      mediaType: 1,
+                      thumbnailUrl: movieDetails.image || 'https://files.catbox.moe/4fsn8g.jpg', // Fallback to provided image
+                      sourceUrl: selectedItem.link
+                    }
+                  }
+                }, { quoted: downloadReply });
+
+                await client.sendMessage(from, { react: { text: '✅', key: msgInfo.key } });
+              }
+            });
+          } catch (error) {
+            console.error("Error fetching movie details:", error);
+            await reply("An error occurred while fetching movie details. Please try again.");
+          }
+        } else {
+          // Fetch TV show details
+          const tvShowUrl = `https://suhas-bro-api.vercel.app/movie/sinhalasub/tvshow?url=${encodeURIComponent(selectedItem.link)}`;
+          try {
+            const tvShowResponse = await axios.get(tvShowUrl);
+            const tvShowDetails = tvShowResponse.data.result;
+            const episodes = tvShowDetails.episodes || [];
+
+            if (!episodes.length) {
+              return await reply("No episodes found for this TV show.");
+            }
+
+            let episodeText = `📺 *${tvShowDetails.title}*\n\n*Available Episodes:*\n`;
+            episodes.forEach((episode, index) => {
+              episodeText += `*${index + 1}.* ${episode.title}\n🔗 Link: ${episode.link}\n\n`;
+            });
+
+            const episodeMessage = await client.sendMessage(from, {
+              text: episodeText,
+              contextInfo: {
+                mentionedJid: [],
+                externalAdReply: {
+                  title: tvShowDetails.title,
+                  body: "Powered by SinhalaSub",
+                  mediaType: 1,
+                  thumbnailUrl: tvShowDetails.image || 'https://files.catbox.moe/4fsn8g.jpg', // Fallback to provided image
+                  sourceUrl: selectedItem.link
+                }
+              }
+            }, { quoted: newMessage });
+            const episodeMessageId = episodeMessage.key.id;
+
+            // Handle episode selection
+            client.ev.on('messages.upsert', async event => {
+              const episodeReply = event.messages[0];
+              if (!episodeReply.message) return;
+
+              const episodeReplyText = episodeReply.message.conversation || episodeReply.message.extendedTextMessage?.text;
+              const isReplyToEpisodes = episodeReply.message.extendedTextMessage && episodeReply.message.extendedTextMessage.contextInfo.stanzaId === episodeMessageId;
+
+              if (isReplyToEpisodes) {
+                const episodeNumber = parseInt(episodeReplyText.trim());
+                if (isNaN(episodeNumber) || episodeNumber < 1 || episodeNumber > episodes.length) {
+                  return await reply("Invalid episode selection. Please reply with a valid number.");
+                }
+
+                const selectedEpisode = episodes[episodeNumber - 1];
+                const episodeUrl = `https://suhas-bro-api.vercel.app/movie/sinhalasub/episode?url=${encodeURIComponent(selectedEpisode.link)}`;
+
+                try {
+                  const episodeResponse = await axios.get(episodeUrl);
+                  const episodeDetails = episodeResponse.data.result;
+                  const downloadLinks = episodeDetails.dl_links || [];
+
+                  if (!downloadLinks.length) {
+                    return await reply("No PixelDrain links found for this episode.");
+                  }
+
+                  let downloadText = `🎬 *${episodeDetails.title}*\n\n*Available PixelDrain Download Links:*\n`;
+                  downloadLinks.forEach((link, index) => {
+                    downloadText += `*${index + 1}.* ${link.quality} - ${link.size}\n🔗 Link: ${link.link}\n\n`;
+                  });
+
+                  const downloadMessage = await client.sendMessage(from, {
+                    text: downloadText,
+                    contextInfo: {
+                      mentionedJid: [],
+                      externalAdReply: {
+                        title: episodeDetails.title,
+                        body: "Download powered by SinhalaSub",
+                        mediaType: 1,
+                        thumbnailUrl: episodeDetails.image || 'https://files.catbox.moe/4fsn8g.jpg', // Fallback to provided image
+                        sourceUrl: selectedEpisode.link
+                      }
+                    }
+                  }, { quoted: episodeReply });
+                  const downloadMessageId = downloadMessage.key.id;
+
+                  // Handle episode download selection
+                  client.ev.on('messages.upsert', async event => {
+                    const downloadReply = event.messages[0];
+                    if (!downloadReply.message) return;
+
+                    const downloadReplyText = downloadReply.message.conversation || downloadReply.message.extendedTextMessage?.text;
+                    const isReplyToDownload = downloadReply.message.extendedTextMessage && downloadReply.message.extendedTextMessage.contextInfo.stanzaId === downloadMessageId;
+
+                    if (isReplyToDownload) {
+                      const downloadNumber = parseInt(downloadReplyText.trim());
+                      if (isNaN(downloadNumber) || downloadNumber < 1 || downloadNumber > downloadLinks.length) {
+                        return await reply("Invalid selection. Please reply with a valid number.");
+                      }
+
+                      const selectedLink = downloadLinks[downloadNumber - 1];
+                      const fileId = selectedLink.link.split('/').pop();
+                      const fileUrl = `https://pixeldrain.com/api/file/${fileId}`;
+
+                      await client.sendMessage(from, { react: { text: '⬇️', key: msgInfo.key } });
+                      await client.sendMessage(from, {
+                        document: { url: fileUrl },
+                        mimetype: "video/mp4",
+                        fileName: `${episodeDetails.title} - ${selectedLink.quality}.mp4`,
+                        caption: `${episodeDetails.title}\nQuality: ${selectedLink.quality}\nPowered by SinhalaSub`,
+                        contextInfo: {
+                          mentionedJid: [],
+                          externalAdReply: {
+                            title: episodeDetails.title,
+                            body: "Download powered by SinhalaSub",
+                            mediaType: 1,
+                            thumbnailUrl: episodeDetails.image || 'https://files.catbox.moe/4fsn8g.jpg', // Fallback to provided image
+                            sourceUrl: selectedEpisode.link
+                          }
+                        }
+                      }, { quoted: downloadReply });
+
+                      await client.sendMessage(from, { react: { text: '✅', key: msgInfo.key } });
+                    }
+                  });
+                } catch (error) {
+                  console.error("Error fetching episode details:", error);
+                  await reply("An error occurred while fetching episode details. Please try again.");
+                }
+              }
+            });
+          } catch (error) {
+            console.error("Error fetching TV show details:", error);
+            await reply("An error occurred while fetching TV show details. Please try again.");
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error during search:", error);
+    await reply("*An error occurred while searching!*");
+  }
 });
-
-////////===================Firemovie
-
-cmd({
-    pattern: "firemovie",
-    alias: ["moviefire", "moviesearch"],
-    react: "🎬",
-    desc: "Search Movies on Fire Movies Hub",
-    category: "movie",
-    use: ".firemovie <movie name>",
-    filename: __filename
-}, async (conn, mek, m, { from, reply, args, q }) => {
-    try {
-        // Check if query is provided
-        if (!q) {
-            return await reply(`
-*🎬 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 𝐌𝐎𝐕𝐈𝐄 𝐒𝐄𝐀𝐑𝐂𝐇*
-
-Usage: .firemovie <movie name>
-
-Examples:
-.firemovie Iron Man
-.firemovie Avengers
 .firemovie Spider-Man
 
 *Tips:*
