@@ -24,7 +24,7 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
         }
 
         // Construct the result message
-        let resultText = 𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙑𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
+        let resultText =` 𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙑𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
         res.data.forEach((item, index) => {
             const title = item.title || 'Unknown Title';
             const year = item.year || 'N/A'; // Adjust based on API response
