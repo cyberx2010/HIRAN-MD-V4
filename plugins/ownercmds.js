@@ -25,7 +25,7 @@ cmd({
         // Send the user's profile picture
         await conn.sendMessage(m.chat, {
             image: { url: userPicUrl },
-            caption: "🖼️ Here is the profile picture of the ${pushName}.\n\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ"
+            caption: "🖼️ Here is the profile picture of the specific user.\n\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ"
         });
     } catch (e) {
         console.error("Error fetching user profile picture:", e);
@@ -37,6 +37,7 @@ cmd({
 
 
 //_______________Once View
+
 
 cmd({
   pattern: "vv",
@@ -82,8 +83,8 @@ async (conn, m, mek, { from, quoted, reply }) => {
       return await reply('🚩 *Only view-once images or videos are supported!*');
     }
 
-    // Download the media
-    const buffer = await downloadMediaMessage({ message: msg }, 'buffer', {}, { logger: console });
+    // Download the media using conn.downloadMediaMessage
+    const buffer = await conn.downloadMediaMessage(msg);
     if (!buffer || buffer.length === 0) {
       console.log('[VV] Failed to download media: Empty buffer');
       return await reply('🚩 *Failed to download view-once media!*');
@@ -119,4 +120,3 @@ async (conn, m, mek, { from, quoted, reply }) => {
     await reply(`🚩 *Error converting view-once message:* ${e.message || 'Unknown error'}`);
   }
 });
-
