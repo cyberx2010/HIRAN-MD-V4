@@ -3,7 +3,7 @@ const {cmd} = require('../command');
 
 cmd({
   pattern: "sinhalasub",
-  alias: ["movie", "tvshow"],
+  alias: ["tvshow"],
   react: '📑',
   category: "download",
   desc: "Search movies or TV shows on SinhalaSub and get download links",
