@@ -50,53 +50,64 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
 //_______________________________________________INFO
 
 cmd({
-    pattern: "cinedl",
-    dontAddCommandList: true,
-    react: '🎥',
-    desc: "movie downloader",
-    filename: __filename
+  pattern: "cinedl",
+  dontAddCommandList: true,
+  react: '🎥',
+  desc: "movie downloader",
+  filename: __filename
 },
 async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
-    try {
-        if (!q) return await reply('*please give me url!..*');
+  try {
+    if (!q) return await reply('*please give me url!..*');
 
-        let res = await fetchJson(`https://cinesub-info.vercel.app/?url=${q}&apikey=dinithimegana`);
+    let res = await fetchJson(`https://cinesub-info.vercel.app/?url=${q}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`);
 
-        let cap = `*☘️ Tιтle ➜* *${res.data.title}*\n\n` +
-                  `*📆 Rᴇʟᴇᴀꜱᴇ ➜* _${res.data.date}_\n` +
-                  `*⭐ Rᴀᴛɪɴɢ ➜* _${res.data.imdb}_\n` +
-                  `*⏰ Rᴜɴᴛɪᴍᴇ ➜* _${res.data.runtime}_\n` +
-                  `*🌎 Cᴏᴜɴᴛʀʏ ➜* _${res.data.country}_\n` +
-                  `*💁‍♂️ Dɪʀᴇᴄᴛᴏʀ ➜* _${res.data.subtitle_author}_\n`;
+    let cap = `*☘️ Tιтle ➜* *${res.data.title}*\n\n` +
+              `*📆 Rᴇʟᴇᴀꜱᴇ ➜* _${res.data.date}_\n` +
+              `*⭐ Rᴀᴛɪɴɢ ➜* _${res.data.imdb}_\n` +
+              `*⏰ Rᴜɴᴛɪᴍᴇ ➜* _${res.data.runtime}_\n` +
+              `*🌎 Cᴏᴜɴᴛʀʏ ➜* _${res.data.country}_\n` +
+              `*💁‍♂️ Dɪʀᴇᴄᴛᴏʀ ➜* _${res.data.subtitle_author}_\n`;
 
-        if (!res.data || !res.dl_links || res.dl_links.length === 0) {
-            return await conn.sendMessage(from, { text: 'erro !' }, { quoted: mek });
-        }
-
-        const sections = [];
-
-        if (Array.isArray(res.dl_links)) {
-            const cinesubzRows = res.dl_links.map(item => ({
-                title: `${item.quality} (${item.size})`,
-                rowId: `${prefix}cinedl ${res.data.image}±${item.link}±${res.data.title}\n\n*\`${item.quality}\`*`
-            }));
-            sections.push({
-                title: "🎬 Cinesubz",
-                rows: cinesubzRows
-            });
-        }
-
-        const listMessage = {
-            image: { url: res.data.image.replace("fit=", "") },
-            text: cap,
-            footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`,
-            title: "📥 Download Option",
-            buttonText: "*Reply Below Number 🔢",
-            sections
-        };
-        return await conn.replyList(from, listMessage, mek);
-    } catch (e) {
-        console.log(e);
-        await conn.sendMessage(from, { text: '🚩 *Error !!*' }, { quoted: mek });
+    if (!res.data || !res.dl_links || res.dl_links.length === 0) {
+      return await conn.sendMessage(from, { text: 'erro !' }, { quoted: mek });
     }
+
+    const sections = [];
+
+    if (Array.isArray(res.dl_links)) {
+      const cinesubzRows = res.dl_links.map(item => ({
+        title: `${item.quality} (${item.size})`,
+        rowId: `${prefix}cinedl ${res.data.image}±${item.link}±${res.data.title}±${item.quality}`
+      }));
+      sections.push({
+        title: "🎬 Cinesubz",
+        rows: cinesubzRows
+      });
+    }
+
+    const listMessage = {
+      image: { url: res.data.image.replace("fit=", "") },
+      text: cap,
+      footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`,
+      title: "📥 Download Option",
+      buttonText: "*Reply Below Number 🔢*",
+      sections,
+      callback: async (m, responseText, { reply }) => {
+        // Handle the selected rowId
+        if (responseText.startsWith(prefix + 'cinedl')) {
+          const [, image, link, title, quality] = responseText.split('±');
+          await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
+          // Optionally, implement download logic here
+        } else {
+          await reply('🚩 *Invalid selection!*');
+        }
+      }
+    };
+
+    return await conn.replyList(from, listMessage, mek);
+  } catch (e) {
+    console.log(e);
+    await conn.sendMessage(from, { text: '🚩 *Error !!*' }, { quoted: mek });
+  }
 });
