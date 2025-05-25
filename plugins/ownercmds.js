@@ -38,10 +38,6 @@ cmd({
 
 //_______________Once View
 
-const { cmd } = require('../command');
-const { getBuffer, downloadMediaMessage } = require('../lib/functions');
-const { fromBuffer } = require('file-type');
-
 cmd({
   pattern: "vv",
   react: '👁️',
