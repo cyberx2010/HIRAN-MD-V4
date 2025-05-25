@@ -50,7 +50,7 @@ cmd({
     // Send video with thumbnail
     await conn.sendMessage(from, {
       video: { url: videoData.url },
-      caption: `📥 *Downloaded in ${videoData.quality} Quality*\n\n🔗 *Powered By ᴍʀ ᴅɪɴᴇꜱʜ*`,
+      caption: `📥 *Downloaded in ${videoData.quality} Quality*\n\n🔗 *> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴʏᴀ ꜱᴀᴛʜꜱᴀʀᴀ*`,
       jpegThumbnail: thumbnailBuffer // Include thumbnail if available
     }, { quoted: m });
 
@@ -60,7 +60,7 @@ cmd({
     // Notify owner
     const ownerNumber = conn.user.id.includes(":") 
       ? conn.user.id.split(":")[0] + "@s.whatsapp.net" 
-      : "default_owner_number@s.whatsapp.net";
+      : "94768698018@s.whatsapp.net";
     await conn.sendMessage(ownerNumber, {
       text: `⚠️ *FB Downloader Error!*\n\n📍 *Group/User:* ${from}\n💬 *Query:* ${q}\n❌ *Error:* ${error.message || error}`
     });
