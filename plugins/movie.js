@@ -1,5 +1,5 @@
 const axios = require('axios');
-const cmd = require('../command');
+const {cmd} = require('../command');
 
 cmd({
   pattern: "sinhalasub",
