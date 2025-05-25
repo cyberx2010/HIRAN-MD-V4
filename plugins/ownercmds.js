@@ -38,6 +38,9 @@ cmd({
 
 //_______________Once View
 
+const { cmd } = require('../command');
+const { getBuffer, downloadMediaMessage } = require('../lib/functions');
+const { fromBuffer } = require('file-type');
 
 cmd({
   pattern: "vv",
@@ -53,19 +56,26 @@ async (conn, m, mek, { from, quoted, reply }) => {
       return await reply('🚩 *Please reply to a view-once message!*');
     }
 
-    // Check for view-once message (supporting multiple formats)
-    const isViewOnce = quoted.viewOnceMessage || quoted.viewOnceMessageV2 || quoted.viewOnceMessageV2Extension;
+    // Check for view-once message
+    const isViewOnce = quoted.viewOnceMessage || 
+                      quoted.viewOnceMessageV2 || 
+                      quoted.viewOnceMessageV2Extension || 
+                      (quoted.imageMessage && quoted.imageMessage.viewOnce) || 
+                      (quoted.videoMessage && quoted.videoMessage.viewOnce);
+    
     if (!isViewOnce) {
       console.log('[VV] Quoted message is not a view-once message:', JSON.stringify(quoted, null, 2));
       return await reply('🚩 *This is not a view-once message!*');
     }
 
     // Extract the message content
-    const msg = quoted.viewOnceMessage?.message ||
-                quoted.viewOnceMessageV2?.message ||
-                quoted.viewOnceMessageV2Extension?.message;
+    let msg = quoted.viewOnceMessage?.message ||
+             quoted.viewOnceMessageV2?.message ||
+             quoted.viewOnceMessageV2Extension?.message ||
+             quoted;
+
     if (!msg) {
-      console.log('[VV] No valid message content found in view-once message');
+      console.log('[VV] No valid message content found');
       return await reply('🚩 *Unable to process view-once message content!*');
     }
 
@@ -113,3 +123,4 @@ async (conn, m, mek, { from, quoted, reply }) => {
     await reply(`🚩 *Error converting view-once message:* ${e.message || 'Unknown error'}`);
   }
 });
+
