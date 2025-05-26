@@ -56,8 +56,8 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
   try {
     if (!q) return await reply('*Please provide a movie URL!*');
 
-    // Fetch movie details from the existing API
-    const detailsApiUrl = `https://cinesubz-info.vercel.app/?url=${encodeURIComponent(q)}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`;
+    // Fetch movie details from the corrected API
+    const detailsApiUrl = `https://cinesub-info.vercel.app/?url=${encodeURIComponent(q)}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`;
     const detailsRes = await fetchJson(detailsApiUrl);
 
     // Log the full details API response for debugging
@@ -82,13 +82,13 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
       imageRes = {}; // Continue with empty response to use fallback
     }
 
-    // Extract image with fallback to details API
-    const imageUrl = imageRes.result?.data?.image || detailsRes.data?.image || 'https://files.catbox.moe/4fsn8g.jpg'; // Fallback to static image if both APIs fail
+    // Extract image with fallback to details API or static image
+    const imageUrl = imageRes.result?.data?.image || detailsRes.data?.image || 'https://files.catbox.moe/4fsn8g.jpg'; // Fallback to static image
     if (!imageUrl) {
       console.warn('No image found in either API response');
     }
 
-    // Construct caption with details from the existing API
+    // Construct caption with details from the details API
     let cap = `*☘️ Title ➜* *${detailsRes.data.title || 'Unknown Title'}*\n\n` +
               `*📆 Release ➜* _${detailsRes.data.date || 'N/A'}_\n` +
               `*⭐ Rating ➜* _${detailsRes.data.imdb || 'N/A'}_\n` +
