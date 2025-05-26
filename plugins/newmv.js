@@ -24,7 +24,7 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
         }
 
         // Construct the result message
-        let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙃𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
+        let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙑𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
         res.data.forEach((item, index) => {
             const title = item.title || 'Unknown Title';
             const year = item.year || 'N/A';
@@ -56,26 +56,26 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
   try {
     if (!q) return await reply('*Please provide a movie URL!*');
 
-    // Fetch movie details from the details API
+    // Fetch download links and subtitle author from info API
     const detailsApiUrl = `https://cinesub-info.vercel.app/?url=${encodeURIComponent(q)}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`;
     const detailsRes = await fetchJson(detailsApiUrl);
 
     // Log the details API response for debugging
-    console.log('Details API response:', JSON.stringify(detailsRes, null, 2));
+    console.log('Info API response:', JSON.stringify(detailsRes, null, 2));
 
-    // Validate details API response
-    if (!detailsRes || !detailsRes.data) {
-      return await reply(`*Error: Invalid response from details API. Please check your URL.*`);
+    // Validate info API response
+    if (!detailsRes || !detailsRes.data || !detailsRes.data.title) {
+      return await reply(`*Error: Invalid response from info API. Please check your URL.*`);
     }
     if (!detailsRes.dl_links || !Array.isArray(detailsRes.dl_links) || detailsRes.dl_links.length === 0) {
       return await reply(`*Error: No download links found for the provided URL: ${q}*`);
     }
 
     // TMDB API key
-    const tmdbApiKey = '68d5b6526b869106a270a6aea22a78e7'; // Your provided key
+    const tmdbApiKey = '68d5b6526b869106a270a6aea22a78e7';
 
     // Fetch TMDB configuration for image base URL
-    let baseImageUrl = 'https://image.tmdb.org/t/p/w500'; // Default base URL and size
+    let baseImageUrl = 'https://image.tmdb.org/t/p/w500';
     try {
       const tmdbConfigRes = await fetchJson(`https://api.themoviedb.org/3/configuration?api_key=${tmdbApiKey}`);
       if (tmdbConfigRes.images?.base_url && tmdbConfigRes.images?.poster_sizes.includes('w500')) {
@@ -87,34 +87,58 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
       console.error('TMDB config API error:', configError);
     }
 
-    // Search TMDB for the movie poster using the title
-    let imageUrl = detailsRes.data.image || 'https://files.catbox.moe/4fsn8g.jpg'; // Fallback to details API or static image
+    // Search TMDB for the movie
+    let movieDetails = {};
+    let imageUrl = 'https://files.catbox.moe/4fsn8g.jpg'; // Fallback image
     try {
-      const tmdbSearchRes = await fetchJson(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(detailsRes.data.title || 'Unknown Title')}`);
+      const tmdbSearchRes = await fetchJson(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(detailsRes.data.title)}`);
       console.log('TMDB search response:', JSON.stringify(tmdbSearchRes, null, 2));
-      if (tmdbSearchRes.results?.[0]?.poster_path) {
-        imageUrl = `${baseImageUrl}${tmdbSearchRes.results[0].poster_path}`;
+      if (tmdbSearchRes.results?.[0]?.id) {
+        // Fetch detailed movie data
+        const movieId = tmdbSearchRes.results[0].id;
+        const tmdbDetailsRes = await fetchJson(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}`);
+        console.log('TMDB movie details response:', JSON.stringify(tmdbDetailsRes, null, 2));
+
+        movieDetails = {
+          title: tmdbDetailsRes.title || 'Unknown Title',
+          releaseDate: tmdbDetailsRes.release_date || 'N/A',
+          rating: tmdbDetailsRes.vote_average ? `${tmdbDetailsRes.vote_average}/10` : 'N/A',
+          runtime: tmdbDetailsRes.runtime ? `${tmdbDetailsRes.runtime} minutes` : 'N/A',
+          country: tmdbDetailsRes.production_countries?.[0]?.name || 'N/A',
+          director: tmdbDetailsRes.credits?.crew?.find(p => p.job === 'Director')?.name || 'Unknown',
+          genres: tmdbDetailsRes.genres?.map(g => g.name).join(', ') || 'N/A',
+          overview: tmdbDetailsRes.overview || 'No description available'
+        };
+        if (tmdbDetailsRes.poster_path) {
+          imageUrl = `${baseImageUrl}${tmdbDetailsRes.poster_path}`;
+        }
       } else {
-        console.warn('No poster found in TMDB search results:', tmdbSearchRes);
+        console.warn('No movie found in TMDB search:', tmdbSearchRes);
       }
-    } catch (tmdbError) {
-      console.error('TMDB search API error:', tmdbError);
+    } catch (tmdbErr) {
+      console.error('TMDB API error:', tmdbErr);
     }
 
-    // Construct caption with details from the details API
-    let cap = `*☘️ Title ➜* *${detailsRes.data.title || 'Unknown Title'}*\n\n` +
-              `*📆 Release ➜* _${detailsRes.data.date || 'N/A'}_\n` +
-              `*⭐ Rating ➜* _${detailsRes.data.imdb || 'N/A'}_\n` +
-              `*⏰ Runtime ➜* _${detailsRes.data.runtime || 'N/A'}_\n` +
-              `*🌎 Country ➜* _${detailsRes.data.country || 'N/A'}_\n` +
-              `*💁‍♂️ Director ➜* _${detailsRes.data.subtitle_author || 'N/A'}_\n`;
+    // Fallback to info API title if TMDB fails
+    const finalTitle = movieDetails.title || detailsRes.data.title || 'Unknown Title';
+
+    // Construct caption with TMDB details and info API subtitle author
+    let cap = `*☘️ Title ➜* *${finalTitle}*\n\n` +
+              `*📆 Release ➜* _${movieDetails.releaseDate || 'N/A'}_\n` +
+              `*⭐ Rating ➜* _${movieDetails.rating || 'N/A'}_\n` +
+              `*⏰ Runtime ➖* _${movieDetails.runtime || 'N/A'}_\n` +
+              `*🌎 Country ➜* _${movieDetails.country || 'N/A'}_\n` +
+              `*🎥 Director ➜* _${movieDetails.director || 'N/A'}_\n` +
+              `*📚 Genres ➜* _${movieDetails.genres || 'N/A'}_\n` +
+              `*💁 Subtitle Author ➜* _${detailsRes.data.subtitle_author || 'N/A'}_\n\n` +
+              `*📖 Overview ➜* _${movieDetails.overview || 'No description available'}_`;
 
     const sections = [];
 
     if (Array.isArray(detailsRes.dl_links)) {
       const cinesubzRows = detailsRes.dl_links.map(item => ({
         title: `${item.quality || 'Unknown Quality'} (${item.size || 'Unknown Size'})`,
-        rowId: `${prefix}cinedl ${imageUrl}±${item.link}±${detailsRes.data.title || 'Unknown Title'}±${item.quality || 'Unknown Quality'}`
+        rowId: `${prefix}cinedl ${imageUrl}±${item.link}±${finalTitle}±${item.quality || 'Unknown Quality'}`
       }));
       sections.push({
         title: "🎬 Cinesubz",
@@ -125,12 +149,11 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
     const listMessage = {
       image: { url: imageUrl.replace("fit=", "") },
       text: cap,
-      footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄 | Uses TMDB API for posters`,
+      footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄 | Uses TMDB API for movie details`,
       title: "📥 Download Option",
       buttonText: "*Reply Below Number 🔢*",
       sections,
       callback: async (m, responseText, { reply }) => {
-        // Handle the selected rowId
         if (responseText.startsWith(prefix + 'cinedl')) {
           const [, image, link, title, quality] = responseText.split('±');
           await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
