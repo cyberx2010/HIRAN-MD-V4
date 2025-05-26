@@ -45,10 +45,6 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
     }
 });
 
-
-
-//_______________________________________________INFO
-
 cmd({
   pattern: "cinedl",
   dontAddCommandList: true,
@@ -58,27 +54,42 @@ cmd({
 },
 async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
   try {
-    if (!q) return await reply('*please give me url!..*');
+    if (!q) return await reply('*Please provide a movie URL!*');
 
-    let res = await fetchJson(`https://cinesub-info.vercel.app/?url=${q}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`);
+    // Fetch movie details from the existing API
+    const detailsApiUrl = `https://cinesubz-info.vercel.app/?url=${encodeURIComponent(q)}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`;
+    const detailsRes = await fetchJson(detailsApiUrl);
 
-    let cap = `*☘️ Tιтle ➜* *${res.data.title}*\n\n` +
-              `*📆 Rᴇʟᴇᴀꜱᴇ ➜* _${res.data.date}_\n` +
-              `*⭐ Rᴀᴛɪɴɢ ➜* _${res.data.imdb}_\n` +
-              `*⏰ Rᴜɴᴛɪᴍᴇ ➜* _${res.data.runtime}_\n` +
-              `*🌎 Cᴏᴜɴᴛʀʏ ➜* _${res.data.country}_\n` +
-              `*💁‍♂️ Dɪʀᴇᴄᴛᴏʀ ➜* _${res.data.subtitle_author}_\n`;
+    // Fetch image from the new API without encoding the URL
+    const imageApiUrl = `https://cinesubz-api-zazie.vercel.app/api/movie?url=${q}`;
+    const imageRes = await fetchJson(imageApiUrl);
 
-    if (!res.data || !res.dl_links || res.dl_links.length === 0) {
-      return await conn.sendMessage(from, { text: 'erro !' }, { quoted: mek });
+    // Validate details API response
+    if (!detailsRes.data || !detailsRes.dl_links || detailsRes.dl_links.length === 0) {
+      return await conn.sendMessage(from, { text: 'Error: No movie data or download links found!' }, { quoted: mek });
     }
+
+    // Validate image API response and extract image
+    const imageUrl = imageRes.result?.data?.image || detailsRes.data.image; // Fallback to details API image if new API fails
+    if (!imageUrl) {
+      console.error('No image found in either API response:', { imageRes, detailsRes });
+      return await conn.sendMessage(from, { text: 'Error: No image available for this movie!' }, { quoted: mek });
+    }
+
+    // Construct caption with details from the existing API
+    let cap = `*☘️ Title ➜* *${detailsRes.data.title}*\n\n` +
+              `*📆 Release ➜* _${detailsRes.data.date}_\n` +
+              `*⭐ Rating ➜* _${detailsRes.data.imdb}_\n` +
+              `*⏰ Runtime ➜* _${detailsRes.data.runtime}_\n` +
+              `*🌎 Country ➜* _${detailsRes.data.country}_\n` +
+              `*💁‍♂️ Director ➜* _${detailsRes.data.subtitle_author}_\n`;
 
     const sections = [];
 
-    if (Array.isArray(res.dl_links)) {
-      const cinesubzRows = res.dl_links.map(item => ({
+    if (Array.isArray(detailsRes.dl_links)) {
+      const cinesubzRows = detailsRes.dl_links.map(item => ({
         title: `${item.quality} (${item.size})`,
-        rowId: `${prefix}cinedl ${res.data.image}±${item.link}±${res.data.title}±${item.quality}`
+        rowId: `${prefix}cinedl ${imageUrl}±${item.link}±${detailsRes.data.title}±${item.quality}`
       }));
       sections.push({
         title: "🎬 Cinesubz",
@@ -87,7 +98,7 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
     }
 
     const listMessage = {
-      image: { url: res.data.image.replace("fit=", "") },
+      image: { url: imageUrl.replace("fit=", "") },
       text: cap,
       footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`,
       title: "📥 Download Option",
@@ -107,7 +118,7 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
 
     return await conn.replyList(from, listMessage, mek);
   } catch (e) {
-    console.log(e);
-    await conn.sendMessage(from, { text: '🚩 *Error !!*' }, { quoted: mek });
+    console.error('Error in cinedl command:', e);
+    await conn.sendMessage(from, { text: `🚩 *Error: ${e.message || 'Something went wrong!'}*` }, { quoted: mek });
   }
 });
