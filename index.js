@@ -8,6 +8,7 @@ const util = require('util');
 const { sms, downloadMediaMessage } = require('./lib/msg');
 const axios = require('axios');
 const { File } = require('megajs');
+const { sendButtonMessage, listMessage, btregex } = require('./nonbutton'); // Import nonbutton.js
 const prefix = '.';
 
 const ownerNumber = ['94768698018'];
@@ -35,7 +36,6 @@ const getCmdForCmdId = async (cmdMap, cmdId) => {
 };
 
 // Add reply tracker method to conn later after connection
-
 if (!fs.existsSync(__dirname + '/auth_info_baileys/creds.json')) {
   if (!config.SESSION_ID) return console.log('Please add your session to SESSION_ID env !!');
   const sessdata = config.SESSION_ID;
@@ -74,72 +74,39 @@ async function connectToWA() {
     }, 5 * 60 * 1000);
   };
 
-  // Button message handler
-  conn.buttonMessage = async (jid, msgData, quotemek) => {
-    const NON_BUTTON = true; // Set to false to use native buttons
+  // Add command store functions to conn
+  conn.updateCMDStore = updateCMDStore;
+  conn.isbtnID = isbtnID;
+  conn.getCMDStore = getCMDStore;
+  conn.getCmdForCmdId = getCmdForCmdId;
+  conn.btregex = btregex;
+
+  // Reply list handler
+  conn.replyList = async (jid, list_reply, quotemek) => {
+    const NON_BUTTON = true;
     if (!NON_BUTTON) {
-      await conn.sendMessage(jid, msgData, { quoted: quotemek });
+      await conn.sendMessage(jid, list_reply, { quoted: quotemek });
     } else {
+      if (!list_reply.sections) return false;
       let result = "";
       const CMD_ID_MAP = [];
-      msgData.buttons.forEach((button, bttnIndex) => {
-        const mainNumber = `${bttnIndex + 1}`;
-        result += `\n*${mainNumber} | ${button.buttonText.displayText}*\n`;
-        CMD_ID_MAP.push({ cmdId: mainNumber, cmd: button.buttonId });
-      });
-
-      const buttonMessage = `${msgData.text || msgData.caption}\n🔢 Reply you want number,${result}\n\n${msgData.footer || ''}`;
-      const textmsg = await conn.sendMessage(jid, {
-        text: buttonMessage,
-        contextInfo: {
-          mentionedJid: [''],
-          groupMentions: [],
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363182681793169@newsletter',
-            serverMessageId: 127,
-          },
-          externalAdReply: {
-            title: '🧚 HIRAN MD 🧚',
-            body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ',
-            mediaType: 1,
-            sourceUrl: "https://wa.me/94768698018",
-            thumbnailUrl: 'https://files.catbox.moe/lacqi4.jpg',
-            renderLargerThumbnail: false,
-            showAdAttribution: true,
-          },
-        },
-      }, { quoted: quotemek });
-      await updateCMDStore(textmsg.key.id, CMD_ID_MAP);
-    }
-  };
-
-  // List message handler
-  conn.listMessage = async (jid, msgData, quotemek) => {
-    const NON_BUTTON = true; // Set to false to use native lists
-    if (!NON_BUTTON) {
-      await conn.sendMessage(jid, msgData, { quoted: quotemek });
-    } else {
-      let result = "";
-      const CMD_ID_MAP = [];
-      msgData.sections.forEach((section, sectionIndex) => {
+      list_reply.sections.forEach((section, sectionIndex) => {
         const mainNumber = `${sectionIndex + 1}`;
-        result += `\n*[${mainNumber}] ${section.title}*\n`;
+        result += section.title ? `\n*${mainNumber} | ${section.title}*\n` : '';
         section.rows.forEach((row, rowIndex) => {
           const subNumber = `${mainNumber}.${rowIndex + 1}`;
-          const rowHeader = `   ${subNumber} | ${row.title}`;
-          result += `${rowHeader}\n`;
-          if (row.description) {
-            result += `   ${row.description}\n\n`;
-          }
+          result += `*${subNumber} || ${row.title}*`;
+          if (row.description) result += `\n   ${row.description}`;
+          result += rowIndex === section.rows.length - 1 ? "" : "\n";
           CMD_ID_MAP.push({ cmdId: subNumber, cmd: row.rowId });
         });
+        result += sectionIndex === list_reply.sections.length - 1 ? "" : "\n\n";
       });
 
-      const listMessage = `${msgData.text}\n\n${msgData.buttonText},${result}\n${msgData.footer || ''}`;
-      const text = await conn.sendMessage(jid, {
-        text: listMessage,
+      const listMessage = `${list_reply.title ? list_reply.title + '\n\n' : ""}${list_reply.caption || list_reply.text}\n\n${list_reply.buttonText}\n\n${result}\n\n${list_reply.footer || ''}`;
+      const sentMessage = await conn.sendMessage(jid, {
+        image: list_reply.image ? list_reply.image : undefined,
+        caption: listMessage,
         contextInfo: {
           mentionedJid: [''],
           groupMentions: [],
@@ -151,7 +118,7 @@ async function connectToWA() {
           },
           externalAdReply: {
             title: '🧚 HIRAN MD 🧚',
-            body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ',
+            body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙ️',
             mediaType: 1,
             sourceUrl: "https://wa.me/94768698018",
             thumbnailUrl: 'https://files.catbox.moe/lacqi4.jpg',
@@ -160,13 +127,22 @@ async function connectToWA() {
           },
         },
       }, { quoted: quotemek });
-      await updateCMDStore(text.key.id, CMD_ID_MAP);
+
+      // Store command mappings
+      await conn.updateCMDStore(sentMessage.key.id, CMD_ID_MAP);
+
+      // Register callback with replyMap if provided
+      if (list_reply.callback) {
+        conn.addReplyTracker(sentMessage.key.id, (m, responseText) => {
+          list_reply.callback(m, responseText, { reply: (teks) => conn.sendMessage(jid, { text: teks }, { quoted: m }) });
+        });
+      }
     }
   };
 
-  // Reply with ad
-  conn.replyad = async (teks) => {
-    return await conn.sendMessage(from, {
+  // Reply with ad (fixed)
+  conn.replyad = async (jid, teks, quotemek) => {
+    return await conn.sendMessage(jid, {
       text: teks,
       contextInfo: {
         mentionedJid: [''],
@@ -179,7 +155,7 @@ async function connectToWA() {
         },
         externalAdReply: {
           title: '🧚 HIRAN MD 🧚',
-          body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ',
+          body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙ️',
           mediaType: 1,
           sourceUrl: "https://wa.me/94768698018",
           thumbnailUrl: 'https://files.catbox.moe/lacqi4.jpg',
@@ -187,7 +163,7 @@ async function connectToWA() {
           showAdAttribution: true,
         },
       },
-    }, { quoted: mek });
+    }, { quoted: quotemek });
   };
 
   // File sending from URL
@@ -196,27 +172,27 @@ async function connectToWA() {
     let res = await axios.head(url);
     mime = res.headers['content-type'];
     if (mime.split("/")[1] === "gif") {
-      return conn.sendMessage(jid, { video: await getBuffer(url), caption: caption, gifPlayback: true, ...options }, { quoted: quoted, ...options });
+      return conn.sendMessage(jid, { video: await getBuffer(url), caption: caption, gifPlayback: true, ...options }, { quoted });
     }
     let type = mime.split("/")[0] + "Message";
     if (mime === "application/pdf") {
-      return conn.sendMessage(jid, { document: await getBuffer(url), mimetype: 'application/pdf', caption: caption, ...options }, { quoted: quoted, ...options });
+      return conn.sendMessage(jid, { document: await getBuffer(url), mimetype: 'application/pdf', caption: caption, ...options }, { quoted });
     }
     if (mime.split("/")[0] === "image") {
-      return conn.sendMessage(jid, { image: await getBuffer(url), caption: caption, ...options }, { quoted: quoted, ...options });
+      return conn.sendMessage(jid, { image: await getBuffer(url), caption: caption, ...options }, { quoted });
     }
     if (mime.split("/")[0] === "video") {
-      return conn.sendMessage(jid, { video: await getBuffer(url), caption: caption, mimetype: 'video/mp4', ...options }, { quoted: quoted, ...options });
+      return conn.sendMessage(jid, { video: await getBuffer(url), caption: caption, mimetype: 'video/mp4', ...options }, { quoted });
     }
     if (mime.split("/")[0] === "audio") {
-      return conn.sendMessage(jid, { audio: await getBuffer(url), caption: caption, mimetype: 'audio/mpeg', ...options }, { quoted: quoted, ...options });
+      return conn.sendMessage(jid, { audio: await getBuffer(url), caption: caption, mimetype: 'audio/mpeg', ...options }, { quoted });
     }
   };
 
   conn.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
-      if (lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut) {
+      if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
         connectToWA();
       }
     } else if (connection === 'open') {
@@ -299,15 +275,17 @@ async function connectToWA() {
       };
 
       // Handle button/list replies
-      if (mek.message?.extendedTextMessage?.contextInfo?.stanzaId && await isbtnID(mek.message.extendedTextMessage.contextInfo.stanzaId)) {
+      if (mek.message?.extendedTextMessage?.contextInfo?.stanzaId && await conn.isbtnID(mek.message.extendedTextMessage.contextInfo.stanzaId)) {
         if (body.startsWith(prefix)) body = body.replace(prefix, '');
-        const cmdMap = await getCMDStore(mek.message.extendedTextMessage.contextInfo.stanzaId);
-        const cmd = await getCmdForCmdId(cmdMap, body);
-        if (cmd) {
-          isCmd = true;
-          command = cmd.startsWith(prefix) ? cmd.slice(prefix.length).trim().split(' ').shift().toLowerCase() : cmd;
-          args = cmd.trim().split(/ +/).slice(1);
-          q = args.join(' ');
+        if (conn.btregex(body)) {
+          const cmdMap = await conn.getCMDStore(mek.message.extendedTextMessage.contextInfo.stanzaId);
+          const cmd = await conn.getCmdForCmdId(cmdMap, body);
+          if (cmd) {
+            isCmd = true;
+            command = cmd.startsWith(prefix) ? cmd.slice(prefix.length).trim().split(' ').shift().toLowerCase() : cmd;
+            args = cmd.trim().split(/ +/).slice(1);
+            q = args.join(' ');
+          }
         }
       }
 
@@ -315,7 +293,7 @@ async function connectToWA() {
       const stanzaId = mek.message?.extendedTextMessage?.contextInfo?.stanzaId || mek.key.id;
       if (replyMap.has(stanzaId)) {
         const { callback } = replyMap.get(stanzaId);
-        return callback(m, (mek.message?.conversation || mek.message?.extendedTextMessage?.text || '').trim());
+        return callback(m, (mek.message?.conversation || mek.message?.extendedTextMessage?.text || '').trim(), { reply });
       }
 
       // Anti-link functionality
@@ -359,7 +337,7 @@ async function connectToWA() {
         }
       }
 
-    /*  // Voice note responses
+     /* // Voice note responses
       const voiceUrl = 'https://gist.github.com/VajiraTech/32826daa4c68497b1545c7c19160d3e9/raw';
       let { data: voiceData } = await axios.get(voiceUrl);
       for (let vr in voiceData) {
@@ -443,7 +421,7 @@ async function connectToWA() {
           break;
         }
         case 'rtf': {
-          console.log("rtf command triggered"); // Placeholder, as original code references undefined `dsa`
+          console.log("rtf command triggered");
           break;
         }
         case 'ev': {
