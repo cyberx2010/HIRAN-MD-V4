@@ -10,91 +10,83 @@ const path = require('path');
 const fileType = require("file-type")
 const l = console.log
 
-
 cmd({
-    pattern: "cine",	
+    pattern: "cine",
     react: '🔎',
     category: "movie",
-	 alias: ["cinesub"],
-    desc: "Moive downloader",
+    alias: ["cinesubz"],
+    desc: "Movie downloader with Sinhala subtitles",
     filename: __filename
 },
-async (conn, m, mek, { from, q, prefix, isMe, reply }) => {
-try{
- if(!q) return await reply('*please give me text !..*')
-let res = await fetchJson(`https://darksadas-yt-cinezub-search.vercel.app/?query=${q}`)
+async (conn, m, mek, { from, q, prefix, reply }) => {
+    try {
+        if (!q) return await reply('*Please provide a search query!*');
 
-if (url.length < 1) return await conn.sendMessage(from, { text: N_FOUND }, { quoted: mek } )
-var srh = [];  
-for (var i = 0; i < res.data.length; i++) {
-srh.push({
-title: i + 1,
-description: res.data[i].title,
-rowId: prefix + 'cineinfo ' + res.data[i].link
+        // Fetch movie data from API
+        const apiUrl = config.CINE_API_URL || 'https://darksadas-yt-cinezub-search.vercel.app/';
+        const res = await fetchJson(`${apiUrl}?query=${encodeURIComponent(q)}`);
+
+        // Validate API response
+        if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
+            return await reply('*No movies found for your query!*');
+        }
+
+        // Construct the result message
+        let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙑𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
+        res.data.forEach((item, index) => {
+            const title = item.title || 'Unknown Title';
+            const year = item.year || 'N/A'; // Adjust based on API response
+            resultText += `*${index + 1} ||* ${title} (${year}) Sinhala Subtitles | සිංහල උපසිරසි සමඟ\n`;
+        });
+        resultText += `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`;
+
+        // Send the image with the caption
+        const imageUrl = 'https://files.catbox.moe/4fsn8g.jpg';
+        await conn.sendMessage(from, {
+            image: { url: imageUrl },
+            caption: resultText
+        }, { quoted: mek });
+
+    } catch (e) {
+        console.error('Error in cine command:', e);
+        await reply(`*Error: ${e.message || 'Something went wrong!'}*`);
+    }
 });
-}
 
-const sections = [{
-title: "",
-rows: srh
-}	  
-]
-const listMessage = {
-text: `*╭──[LOKU MD MOVIE DL]*
 
-*Movie Search : ${q} 🔎*`,
-footer: config.FOOTER,
-title: '_[cinesubz.co results 🎬]_',
-buttonText: '*Reply Below Number 🔢,*',
-sections
-}
-await conn.replyList(from, listMessage,mek)
-} catch (e) {
-    console.log(e)
-  await conn.sendMessage(from, { text: '🚩 *Error !!*' }, { quoted: mek } )
-}
-})
+
+//_______________________________________________INFO
 
 cmd({
-    pattern: "cinedl",	
-    dontAddCommandList: true,
-    react: '🎥',
-    desc: "moive downloader",
-    filename: __filename
+  pattern: "cinedl",
+  dontAddCommandList: true,
+  react: '🎥',
+  desc: "movie downloader",
+  filename: __filename
 },
 async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
-try{
+  try {
+    if (!q) return await reply('*please give me url!..*');
 
+    let res = await fetchJson(`https://cinesub-info.vercel.app/?url=${q}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`);
 
-     if(!q) return await reply('*please give me url!..*')
+    let cap = `*☘️ Tιтle ➜* *${res.data.title}*\n\n` +
+              `*📆 Rᴇʟᴇᴀꜱᴇ ➜* _${res.data.date}_\n` +
+              `*⭐ Rᴀᴛɪɴɢ ➜* _${res.data.imdb}_\n` +
+              `*⏰ Rᴜɴᴛɪᴍᴇ ➜* _${res.data.runtime}_\n` +
+              `*🌎 Cᴏᴜɴᴛʀʏ ➜* _${res.data.country}_\n` +
+              `*💁‍♂️ Dɪʀᴇᴄᴛᴏʀ ➜* _${res.data.subtitle_author}_\n`;
 
+    if (!res.data || !res.dl_links || res.dl_links.length === 0) {
+      return await conn.sendMessage(from, { text: 'erro !' }, { quoted: mek });
+    }
 
-let res = await fetchJson(`https://cinesub-info.vercel.app/?url=${q}&apikey=dinithimegana`)
-
-
-	let cap = `*☘️ Tιтle ➜* *${res.data.title}*
-
-*📆 Rᴇʟᴇᴀꜱᴇ ➜* _${res.data.date}_
-*⭐ Rᴀᴛɪɴɢ ➜* _${res.data.imdb}_
-*⏰ Rᴜɴᴛɪᴍᴇ ➜* _${res.data.runtime}_
-*🌎 Cᴏᴜɴᴛʀʏ ➜* _${res.data.country}_
-*💁‍♂️ Dɪʀᴇᴄᴛᴏʀ ➜* _${res.data.subtitle_author}_
-`
-
-
-
-if (res.length < 1) return await conn.sendMessage(from, { text: 'erro !' }, { quoted: mek } )
-
-
-
-const sections = [];
+    const sections = [];
 
     if (Array.isArray(res.dl_links)) {
       const cinesubzRows = res.dl_links.map(item => ({
-        title: `${v.quality} (${v.size})`,
-        rowId: `${prefix}cinedl ${res.data.image}±${v.link}±${res.data.title}
-	
-	*\`${v.quality}\`*`
+        title: `${item.quality} (${item.size})`,
+        rowId: `${prefix}cinedl ${res.data.image}±${item.link}±${res.data.title}±${item.quality}`
       }));
       sections.push({
         title: "🎬 Cinesubz",
@@ -102,20 +94,28 @@ const sections = [];
       });
     }
 
-
-  
-const listMessage = {
- 
-image: {url: res.data.image.replace("fit=", "")},	
+    const listMessage = {
+      image: { url: res.data.image.replace("fit=", "") },
       text: cap,
-      footer: config.FOOTER,
+      footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`,
       title: "📥 Download Option",
-      buttonText: "*Reply Below Number 🔢,",
-      sections
-}
-return await conn.replyList(from, listMessage, mek)
-} catch (e) {
-    console.log(e)
-  await conn.sendMessage(from, { text: '🚩 *Error !!*' }, { quoted: mek } )
-}
-})
+      buttonText: "*Reply Below Number 🔢*",
+      sections,
+      callback: async (m, responseText, { reply }) => {
+        // Handle the selected rowId
+        if (responseText.startsWith(prefix + 'cinedl')) {
+          const [, image, link, title, quality] = responseText.split('±');
+          await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
+          // Optionally, implement download logic here
+        } else {
+          await reply('🚩 *Invalid selection!*');
+        }
+      }
+    };
+
+    return await conn.replyList(from, listMessage, mek);
+  } catch (e) {
+    console.log(e);
+    await conn.sendMessage(from, { text: '🚩 *Error !!*' }, { quoted: mek });
+  }
+});
