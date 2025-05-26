@@ -24,7 +24,7 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
         }
 
         // Construct the result message
-        let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙑𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
+        let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙃𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
         res.data.forEach((item, index) => {
             const title = item.title || 'Unknown Title';
             const year = item.year || 'N/A';
@@ -60,7 +60,7 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
     const detailsApiUrl = `https://cinesub-info.vercel.app/?url=${encodeURIComponent(q)}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`;
     const detailsRes = await fetchJson(detailsApiUrl);
 
-    // Log the details API response for debugging
+    // Log the info API response for debugging
     console.log('Info API response:', JSON.stringify(detailsRes, null, 2));
 
     // Validate info API response
@@ -71,13 +71,15 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
       return await reply(`*Error: No download links found for the provided URL: ${q}*`);
     }
 
-    // TMDB API key
-    const tmdbApiKey = '68d5b6526b869106a270a6aea22a78e7';
+    // TMDB read access token
+    const tmdbToken = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2OGQ1YjY1MjZiODY5MTA2YTI3MGE2YWVhMjJhNzhlNyIsIm5iZiI6MTc0ODI2NjU2Ni45MzQsInN1YiI6IjY4MzQ2ZTQ2ZGEwNGY5ZGViNzQxNDQ2YyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.cEtRDbUqMMkWfKamX-FE4pYrHmO8IpIMCToC9s4TQAM';
 
     // Fetch TMDB configuration for image base URL
     let baseImageUrl = 'https://image.tmdb.org/t/p/w500';
     try {
-      const tmdbConfigRes = await fetchJson(`https://api.themoviedb.org/3/configuration?api_key=${tmdbApiKey}`);
+      const tmdbConfigRes = await fetchJson('https://api.themoviedb.org/3/configuration', {
+        headers: { Authorization: `Bearer ${tmdbToken}` }
+      });
       if (tmdbConfigRes.images?.base_url && tmdbConfigRes.images?.poster_sizes.includes('w500')) {
         baseImageUrl = `${tmdbConfigRes.images.base_url}w500`;
       } else {
@@ -91,21 +93,25 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
     let movieDetails = {};
     let imageUrl = 'https://files.catbox.moe/4fsn8g.jpg'; // Fallback image
     try {
-      const tmdbSearchRes = await fetchJson(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(detailsRes.data.title)}`);
+      const tmdbSearchRes = await fetchJson(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(detailsRes.data.title)}`, {
+        headers: { Authorization: `Bearer ${tmdbToken}` }
+      });
       console.log('TMDB search response:', JSON.stringify(tmdbSearchRes, null, 2));
       if (tmdbSearchRes.results?.[0]?.id) {
         // Fetch detailed movie data
         const movieId = tmdbSearchRes.results[0].id;
-        const tmdbDetailsRes = await fetchJson(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}`);
+        const tmdbDetailsRes = await fetchJson(`https://api.themoviedb.org/3/movie/${movieId}?append_to_response=credits`, {
+          headers: { Authorization: `Bearer ${tmdbToken}` }
+        });
         console.log('TMDB movie details response:', JSON.stringify(tmdbDetailsRes, null, 2));
 
         movieDetails = {
           title: tmdbDetailsRes.title || 'Unknown Title',
           releaseDate: tmdbDetailsRes.release_date || 'N/A',
-          rating: tmdbDetailsRes.vote_average ? `${tmdbDetailsRes.vote_average}/10` : 'N/A',
+          rating: tmdbDetailsRes.vote_average ? `${tmdbDetailsRes.vote_average.toFixed(1)}/10` : 'N/A',
           runtime: tmdbDetailsRes.runtime ? `${tmdbDetailsRes.runtime} minutes` : 'N/A',
           country: tmdbDetailsRes.production_countries?.[0]?.name || 'N/A',
-          director: tmdbDetailsRes.credits?.crew?.find(p => p.job === 'Director')?.name || 'Unknown',
+          director: tmdbDetailsRes.credits?.crew?.find(p => p.job === 'Director')?.name || 'N/A',
           genres: tmdbDetailsRes.genres?.map(g => g.name).join(', ') || 'N/A',
           overview: tmdbDetailsRes.overview || 'No description available'
         };
@@ -126,7 +132,7 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
     let cap = `*☘️ Title ➜* *${finalTitle}*\n\n` +
               `*📆 Release ➜* _${movieDetails.releaseDate || 'N/A'}_\n` +
               `*⭐ Rating ➜* _${movieDetails.rating || 'N/A'}_\n` +
-              `*⏰ Runtime ➖* _${movieDetails.runtime || 'N/A'}_\n` +
+              `*⏰ Runtime ➜* _${movieDetails.runtime || 'N/A'}_\n` +
               `*🌎 Country ➜* _${movieDetails.country || 'N/A'}_\n` +
               `*🎥 Director ➜* _${movieDetails.director || 'N/A'}_\n` +
               `*📚 Genres ➜* _${movieDetails.genres || 'N/A'}_\n` +
@@ -157,7 +163,6 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
         if (responseText.startsWith(prefix + 'cinedl')) {
           const [, image, link, title, quality] = responseText.split('±');
           await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
-          // Optionally, implement download logic here
         } else {
           await reply('🚩 *Invalid selection!*');
         }
