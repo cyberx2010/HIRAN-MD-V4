@@ -1,8 +1,6 @@
 const axios = require("axios");
-const { cmd, commands } = require('../command')
-const config = require('../config');
-const {fetchJson} = require('../lib/functions');
-
+const { cmd } = require('../command');
+const { fetchJson } = require('../lib/functions');
 
 cmd({
   pattern: "sinhalasub",
@@ -22,21 +20,23 @@ async (conn, mek, m, { from, q, reply, prefix }) => {
       return reply("api call කරන්නෑ.");
     }
 
-    const buttons = res.result.data.slice(0, 10).map((item, i) => ({
-      buttonId: `${prefix}sub_search ${item.link}`,
-      buttonText: { displayText: `${item.title}` },
-      type: 1
+    const list = res.result.data.slice(0, 10).map((item, index) => ({
+      title: `${index + 1}. ${item.title}`,
+      rowId: `${prefix}sub_search ${item.link}`
     }));
 
-    const buttonMessage = {
-      image: { url: "https://i.ibb.co/1YPWpS3H/9882.jpg" },
-      caption: `*Sinhala Subtitle Search Results for:* ${q}`,
-      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʟᴏᴋᴜ-ᴍᴅ 🔒🪄",
-      buttons: buttons,
-      headerType: 4
-    };
+    const sections = [{
+      title: "🎬 Sinhala Subtitle Results",
+      rows: list
+    }];
 
-    return await conn.buttonMessage2(from, buttonMessage, mek);
+    await conn.sendMessage(from, {
+      text: `*Sinhala Subtitle Search Results for:* ${q}`,
+      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʟᴏᴋᴜ-ᴍᴅ 🔒🪄",
+      title: "",
+      buttonText: "🔢 Choose a Movie",
+      sections: sections
+    }, { quoted: mek });
 
   } catch (e) {
     reply('*Error !!*');
@@ -59,14 +59,14 @@ async (conn, mek, m, { from, q, reply, prefix }) => {
     if (!data) return reply("api eka call karanna bh");
 
     const caption = `
-🎬 \`Title\` : ${data.title || "Not Available"}
-🗓️ \`Date\` : ${data.date}
-🌍 \`Country\` : ${data.country}
-🎥 \`Director\` : ${data.director}
-⭐ \`TMDB Rating\` : ${data.tmdbRate}
-🗳️ \`SinhalaSub Votes\` : ${data.sinhalasubVote}
-✍️ \`Subtitle Author\` : ${data.subtitle_author}
-🎞️ \`Category\` : ${data.category.join(", ")}
+🎬 *Title* : ${data.title || "Not Available"}
+🗓️ *Date* : ${data.date}
+🌍 *Country* : ${data.country}
+🎥 *Director* : ${data.director}
+⭐ *TMDB Rating* : ${data.tmdbRate}
+🗳️ *SinhalaSub Votes* : ${data.sinhalasubVote}
+✍️ *Subtitle Author* : ${data.subtitle_author}
+🎞️ *Category* : ${data.category.join(", ")}
 
 🧾 *Description:* 
 ${data.description}
@@ -115,8 +115,10 @@ cmd({
   pattern: "sub_dl",
   fromMe: false,
   desc: "Downloads the subtitle file from selected quality link",
-  type: "download"
-}, async (conn, mek, m, { q, reply }) => {
+  type: "download",
+  filename: __filename
+},
+async (conn, mek, m, { q, reply }) => {
   try {
     const [type, link] = q.split("|");
     if (!link) return reply("❌ Link direct karanna bah");
