@@ -1,71 +1,134 @@
-const { cmd } = require('../command');
-const { fetchJson } = require('../lib/functions');
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const axios = require("axios");
+const { cmd, commands } = require('../lib/command')
+const config = require('../settings');
+const {fetchJson} = require('../lib/functions');
+
 
 cmd({
-  pattern: "cine",
-  react: '🎬',
-  alias: ['cinesubz'],
+  pattern: "sinhalasub",
+  alias: ["ssub"],
+  desc: "Search Sinhala Subtitles",
   category: "movie",
+  use: ".sinhalasub 2024",
   filename: __filename
-}, async (conn, m, mek, { q, from, prefix, reply }) => {
+},
+async (conn, mek, m, { from, q, reply, prefix }) => {
   try {
-    if (!q) return await reply("*Please provide a movie name to search!*");
+    if (!q) return reply("text එකක් දියන් යකූ (e.g. `.ssub 2024`)");
 
-    const res = await fetchJson(`https://cinesubz.mizta-x.com/movie-search?name=${encodeURIComponent(q)}`);
-    const results = res?.data;
+    const res = await fetchJson(`https://nethu-api-ashy.vercel.app/movie/sinhalasub/search?text=${encodeURIComponent(q)}`);
 
-    if (!results || results.length === 0) {
-      return await reply("*No movie found!*");
+    if (!res.result || res.result.data.length === 0) {
+      return reply("api call කරන්නෑ.");
     }
 
-    let msg = `*🔍 CINESUBZ MOVIE SEARCH RESULTS:*\n\n_Reply with number to continue_\n\n`;
-    results.slice(0, 20).forEach((movie, i) => {
-      msg += `*${i + 1}.* ${movie.title} (Sinhala Sub)\n`;
-    });
-    msg += `\n> ⚜️ 𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝  -  𝐇 𝐈 𝐑 𝐀 𝐍  𝐌 𝐃  𝐁 𝐘  𝐇 𝐈 𝐑 𝐀 𝐍 𝐘 𝐀  𝐒 𝐀 𝐓 𝐇 𝐒 𝐀 𝐑 𝐀`;
+    const buttons = res.result.data.slice(0, 10).map((item, i) => ({
+      buttonId: `${prefix}sub_search ${item.link}`,
+      buttonText: { displayText: `${item.title}` },
+      type: 1
+    }));
+
+    const buttonMessage = {
+      image: { url: "https://i.ibb.co/1YPWpS3H/9882.jpg" },
+      caption: `*Sinhala Subtitle Search Results for:* ${q}`,
+      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʟᴏᴋᴜ-ᴍᴅ 🔒🪄",
+      buttons: buttons,
+      headerType: 4
+    };
+
+    return await conn.buttonMessage2(from, buttonMessage, mek);
+
+  } catch (e) {
+    reply('*Error !!*');
+    console.error(e);
+  }
+});
+
+cmd({
+  pattern: "sub_search",
+  react: "🔎",
+  dontAddCommandList: true,
+  filename: __filename
+},
+async (conn, mek, m, { from, q, reply, prefix }) => {
+  try {
+    if (!q) return reply("link eka diyan");
+
+    const res = await fetchJson(`https://nethu-api-ashy.vercel.app/movie/sinhalasub/movie?url=${encodeURIComponent(q)}`);
+    const data = res?.result?.data;
+    if (!data) return reply("api eka call karanna bh");
+
+    const caption = `
+🎬 \`Title\` : ${data.title || "Not Available"}
+🗓️ \`Date\` : ${data.date}
+🌍 \`Country\` : ${data.country}
+🎥 \`Director\` : ${data.director}
+⭐ \`TMDB Rating\` : ${data.tmdbRate}
+🗳️ \`SinhalaSub Votes\` : ${data.sinhalasubVote}
+✍️ \`Subtitle Author\` : ${data.subtitle_author}
+🎞️ \`Category\` : ${data.category.join(", ")}
+
+🧾 *Description:* 
+${data.description}
+`.trim();
+
+    const sections = [];
+
+    if (Array.isArray(data.pixeldrain_dl)) {
+      const pixeldrainRows = data.pixeldrain_dl.map(item => ({
+        title: `${item.quality} (${item.size})`,
+        rowId: `${prefix}sub_dl pixeldrain|${item.link}`
+      }));
+      sections.push({
+        title: "📥 PixelDrain",
+        rows: pixeldrainRows
+      });
+    }
+
+    if (Array.isArray(data.ddl_dl)) {
+      const ddlRows = data.ddl_dl.map(item => ({
+        title: `${item.quality} (${item.size})`,
+        rowId: `${prefix}sub_dl ddl|${item.link}`
+      }));
+      sections.push({
+        title: "📥 DDL",
+        rows: ddlRows
+      });
+    }
 
     await conn.sendMessage(from, {
-      image: { url: 'https://files.catbox.moe/4fsn8g.jpg' },
-      caption: msg
+      text: caption,
+      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʟᴏᴋᴜ-ᴍᴅ 🔒🪄",
+      title: "",
+      buttonText: "`Reply Below Number` 🔢",
+      sections,
+      image: { url: data.image }
     }, { quoted: mek });
-
-    conn.replyOnce(from, async (msg2) => {
-      const num = parseInt(msg2);
-      if (isNaN(num) || num < 1 || num > results.length) {
-        return await reply("*Invalid selection number!*");
-      }
-
-      const movieLink = results[num - 1].movieLink;
-      const detail = await fetchJson(`https://cinesubz.mizta-x.com${movieLink}`);
-
-      const { title, description, image, download } = detail.data;
-      let caption = `*🎬 TITLE:* ${title}\n\n*🗒️ DESCRIPTION:*\n${description}\n\n*⬇️ DOWNLOAD OPTIONS:*\n`;
-
-      download.forEach((item, i) => {
-        caption += `\n*${i + 1}.* ${item.quality} - ${item.size}`;
-      });
-      caption += `\n\n> ⚜️ 𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝  -  𝐇 𝐈 𝐑 𝐀 𝐍  𝐌 𝐃  𝐁 𝐘  𝐇 𝐈 𝐑 𝐀 𝐍 𝐘 𝐀  𝐒 𝐀 𝐓 𝐇 𝐒 𝐀 𝐑 𝐀`;
-
-      await conn.sendMessage(from, {
-        image: { url: image },
-        caption
-      }, { quoted: mek });
-
-      conn.replyOnce(from, async (msg3) => {
-        const pick = parseInt(msg3);
-        if (isNaN(pick) || pick < 1 || pick > download.length) {
-          return await reply("*Invalid option selected!*");
-        }
-
-        const selected = download[pick - 1];
-        await reply(`*🎬 Title:* ${title}\n*📥 Quality:* ${selected.quality}\n\n*🔗 Download Link:* ${selected.link}\n\n> ⚜️ 𝐃𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐝  -  𝐇 𝐈 𝐑 𝐀 𝐍  𝐌 𝐃  𝐁 𝐘  𝐇 𝐈 𝐑 𝐀 𝐍 𝐘 𝐀  𝐒 𝐀 𝐓 𝐇 𝐒 𝐀 𝐑 𝐀`);
-      });
-
-    });
 
   } catch (e) {
     console.error(e);
-    await reply(`❌ Error: ${e.message}`);
+    await reply('*Error !!*');
+  }
+});
+
+cmd({
+  pattern: "sub_dl",
+  fromMe: false,
+  desc: "Downloads the subtitle file from selected quality link",
+  type: "download"
+}, async (conn, mek, m, { q, reply }) => {
+  try {
+    const [type, link] = q.split("|");
+    if (!link) return reply("❌ Link direct karanna bah");
+
+    await conn.sendMessage(m.chat, {
+      document: { url: link },
+      mimetype: 'video/mp4',
+      fileName: 'ʟᴏᴋᴜ-ᴍᴅ-ꜱɪɴʜᴀʟᴀꜱᴜʙ_ᴅʟ.mp4'
+    }, { quoted: mek });
+
+  } catch (e) {
+    reply("❌ Download error.");
+    console.error(e);
   }
 });
