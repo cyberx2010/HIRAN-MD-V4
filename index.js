@@ -35,7 +35,7 @@ const getCmdForCmdId = async (cmdMap, cmdId) => {
   return cmd ? cmd.cmd : '';
 };
 
-// Placeholder for getDevice (since it was undefined)
+// Placeholder for getDevice
 const getDevice = (id) => 'unknown';
 
 // Session download
@@ -69,7 +69,6 @@ async function connectToWA() {
     version
   });
 
-  // Add reply tracker method
   conn.addReplyTracker = (msgId, callback) => {
     replyMap.set(msgId, { callback });
     setTimeout(() => {
@@ -77,14 +76,12 @@ async function connectToWA() {
     }, 5 * 60 * 1000);
   };
 
-  // Add command store functions to conn
   conn.updateCMDStore = updateCMDStore;
   conn.isbtnID = isbtnID;
   conn.getCMDStore = getCMDStore;
   conn.getCmdForCmdId = getCmdForCmdId;
   conn.btregex = btregex;
 
-  // Reply list handler
   conn.replyList = async (jid, list_reply, quotemek) => {
     const NON_BUTTON = true;
     if (!NON_BUTTON) {
@@ -116,15 +113,15 @@ async function connectToWA() {
           forwardingScore: 1,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363182681793169@newsletter',
+            newsletterJid: '120363401446603948@newsletter',
             serverMessageId: 127,
           },
           externalAdReply: {
-            title: '🧚 HIRAN MD 🧚',
-            body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙ️',
+            title: '🪄 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🧚‍♂️',
+            body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ᴜꜱᴇʀ ʙᴏᴛ',
             mediaType: 1,
             sourceUrl: "https://wa.me/94768698018",
-            thumbnailUrl: 'https://files.catbox.moe/lacqi4.jpg',
+            thumbnailUrl: 'https://files.catbox.moe/4fsn8g.jpg',
             renderLargerThumbnail: false,
             showAdAttribution: true,
           },
@@ -141,7 +138,6 @@ async function connectToWA() {
     }
   };
 
-  // Reply with ad
   conn.replyad = async (jid, teks, quotemek) => {
     return await conn.sendMessage(jid, {
       text: teks,
@@ -151,15 +147,15 @@ async function connectToWA() {
         forwardingScore: 1,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363182681793169@newsletter',
+          newsletterJid: '120363401446603948@newsletter',
           serverMessageId: 127,
         },
         externalAdReply: {
-          title: '🧚 HIRAN MD 🧚',
-          body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙ️',
+          title: '🪄 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🧚‍♂️',
+          body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ᴜꜱᴇʀ ʙᴏᴛ',
           mediaType: 1,
           sourceUrl: "https://wa.me/94768698018",
-          thumbnailUrl: 'https://files.catbox.moe/lacqi4.jpg',
+          thumbnailUrl: 'https://files.catbox.moe/4fsn8g.jpg',
           renderLargerThumbnail: false,
           showAdAttribution: true,
         },
@@ -167,7 +163,6 @@ async function connectToWA() {
     }, { quoted: quotemek });
   };
 
-  // File sending from URL
   conn.sendFileUrl = async (jid, url, caption, quoted, options = {}) => {
     try {
       let mime = '';
@@ -237,7 +232,7 @@ async function connectToWA() {
 ╰━━━━━━━━━━━━━━━━━━━╯`;
 
         conn.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
-          image: { url: "https://files.catbox.moe/lacqi4.jpg" },
+          image: { url: "https://files.catbox.moe/4fsn8g.jpg" },
           caption: up
         });
       } catch (e) {
@@ -281,7 +276,6 @@ async function connectToWA() {
         conn.sendMessage(from, { text: teks }, { quoted: mek });
       };
 
-      // Handle button/list replies
       if (mek.message?.extendedTextMessage?.contextInfo?.stanzaId && await conn.isbtnID(mek.message.extendedTextMessage.contextInfo.stanzaId)) {
         if (body.startsWith(prefix)) body = body.replace(prefix, '');
         if (conn.btregex(body)) {
@@ -296,20 +290,17 @@ async function connectToWA() {
         }
       }
 
-      // StanzaId reply handling
       const stanzaId = mek.message?.extendedTextMessage?.contextInfo?.stanzaId || mek.key.id;
       if (replyMap.has(stanzaId)) {
         const { callback } = replyMap.get(stanzaId);
         return callback(m, (mek.message?.conversation || mek.message?.extendedTextMessage?.text || '').trim(), { reply });
       }
 
-      // Anti-link functionality
       if (config.ANTI_LINK && isBotAdmins && isGroup && !isAdmins && !isOwner && body.match(`chat.whatsapp.com`)) {
         await conn.sendMessage(from, { delete: mek.key });
         await reply("Link detected and deleted!");
       }
 
-      // Anti-bad word functionality
       if (config.ANTI_BAD && isBotAdmins && isGroup && !isAdmins && !isOwner) {
         const badWords = await fetchJson("https://github.com/vihangayt0/server-/raw/main/xeonsl_bad.json").catch(e => []);
         for (let word of badWords) {
@@ -322,7 +313,6 @@ async function connectToWA() {
         }
       }
 
-      // Anti-bot detection
       const checkBot = (id) => {
         let data = { is_bot: false, device: id.length > 21 ? 'android' : id.substring(0, 2) === '3A' ? 'ios' : 'web' };
         if (id.startsWith('BAE5')) {
@@ -344,7 +334,6 @@ async function connectToWA() {
         }
       }
 
-      // Command handling
       const events = require('./command');
       const cmdName = isCmd ? body.slice(1).trim().split(" ")[0].toLowerCase() : false;
       if (isCmd) {
@@ -375,7 +364,6 @@ async function connectToWA() {
         }
       });
 
-      // Custom commands
       switch (command) {
         case 'jid':
           reply(from);
