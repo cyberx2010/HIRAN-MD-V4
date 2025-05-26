@@ -4,8 +4,8 @@ const { getBuffer, sleep } = require('../lib/functions');
 const conf = require('../config.js');
 
 cmd({
-  pattern: "cinesubz",
-  alias: ["cine"],
+  pattern: "cines",
+  alias: ["ci"],
   react: "🎬",
   desc: "Search and download movies from CineSubz",
   category: "movie",
