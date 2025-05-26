@@ -24,10 +24,10 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
         }
 
         // Construct the result message
-        let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙑𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
+        let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙃𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
         res.data.forEach((item, index) => {
             const title = item.title || 'Unknown Title';
-            const year = item.year || 'N/A'; // Adjust based on API response
+            const year = item.year || 'N/A';
             resultText += `*${index + 1} ||* ${title} (${year}) Sinhala Subtitles | සිංහල උපසිරසි සමඟ\n`;
         });
         resultText += `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`;
@@ -56,36 +56,49 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
   try {
     if (!q) return await reply('*Please provide a movie URL!*');
 
-    // Fetch movie details from the corrected API
+    // Fetch movie details from the details API
     const detailsApiUrl = `https://cinesub-info.vercel.app/?url=${encodeURIComponent(q)}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`;
     const detailsRes = await fetchJson(detailsApiUrl);
 
-    // Log the full details API response for debugging
+    // Log the details API response for debugging
     console.log('Details API response:', JSON.stringify(detailsRes, null, 2));
 
     // Validate details API response
     if (!detailsRes || !detailsRes.data) {
-      return await reply(`*Error: Invalid response from details API. Please check the URL or try again later.*`);
+      return await reply(`*Error: Invalid response from details API. Please check your URL.*`);
     }
     if (!detailsRes.dl_links || !Array.isArray(detailsRes.dl_links) || detailsRes.dl_links.length === 0) {
       return await reply(`*Error: No download links found for the provided URL: ${q}*`);
     }
 
-    // Fetch image from the new API without encoding the URL
-    const imageApiUrl = `https://cinesubz-api-zazie.vercel.app/api/movie?url=${q}`;
-    let imageRes;
+    // TMDB API key
+    const tmdbApiKey = '68d5b6526b869106a270a6aea22a78e7'; // Your provided key
+
+    // Fetch TMDB configuration for image base URL
+    let baseImageUrl = 'https://image.tmdb.org/t/p/w500'; // Default base URL and size
     try {
-      imageRes = await fetchJson(imageApiUrl);
-      console.log('Image API response:', JSON.stringify(imageRes, null, 2));
-    } catch (imageError) {
-      console.error('Image API error:', imageError);
-      imageRes = {}; // Continue with empty response to use fallback
+      const tmdbConfigRes = await fetchJson(`https://api.themoviedb.org/3/configuration?api_key=${tmdbApiKey}`);
+      if (tmdbConfigRes.images?.base_url && tmdbConfigRes.images?.poster_sizes.includes('w500')) {
+        baseImageUrl = `${tmdbConfigRes.images.base_url}w500`;
+      } else {
+        console.warn('TMDB configuration fallback used:', tmdbConfigRes);
+      }
+    } catch (configError) {
+      console.error('TMDB config API error:', configError);
     }
 
-    // Extract image with fallback to details API or static image
-    const imageUrl = imageRes.result?.data?.image || detailsRes.data?.image || 'https://files.catbox.moe/4fsn8g.jpg'; // Fallback to static image
-    if (!imageUrl) {
-      console.warn('No image found in either API response');
+    // Search TMDB for the movie poster using the title
+    let imageUrl = detailsRes.data.image || 'https://files.catbox.moe/4fsn8g.jpg'; // Fallback to details API or static image
+    try {
+      const tmdbSearchRes = await fetchJson(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(detailsRes.data.title || 'Unknown Title')}`);
+      console.log('TMDB search response:', JSON.stringify(tmdbSearchRes, null, 2));
+      if (tmdbSearchRes.results?.[0]?.poster_path) {
+        imageUrl = `${baseImageUrl}${tmdbSearchRes.results[0].poster_path}`;
+      } else {
+        console.warn('No poster found in TMDB search results:', tmdbSearchRes);
+      }
+    } catch (tmdbError) {
+      console.error('TMDB search API error:', tmdbError);
     }
 
     // Construct caption with details from the details API
@@ -112,7 +125,7 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
     const listMessage = {
       image: { url: imageUrl.replace("fit=", "") },
       text: cap,
-      footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`,
+      footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄 | Uses TMDB API for posters`,
       title: "📥 Download Option",
       buttonText: "*Reply Below Number 🔢*",
       sections,
