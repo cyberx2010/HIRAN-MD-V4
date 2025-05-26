@@ -8,7 +8,7 @@ const util = require('util');
 const { sms, downloadMediaMessage } = require('./lib/msg');
 const axios = require('axios');
 const { File } = require('megajs');
-const { sendButtonMessage, listMessage, btregex } = require('./nonbutton'); // Import nonbutton.js
+const { sendButtonMessage, listMessage, btregex } = require('./nonbutton');
 const prefix = '.';
 
 const ownerNumber = ['94768698018'];
@@ -35,7 +35,10 @@ const getCmdForCmdId = async (cmdMap, cmdId) => {
   return cmd ? cmd.cmd : '';
 };
 
-// Add reply tracker method to conn later after connection
+// Placeholder for getDevice (since it was undefined)
+const getDevice = (id) => 'unknown';
+
+// Session download
 if (!fs.existsSync(__dirname + '/auth_info_baileys/creds.json')) {
   if (!config.SESSION_ID) return console.log('Please add your session to SESSION_ID env !!');
   const sessdata = config.SESSION_ID;
@@ -128,10 +131,8 @@ async function connectToWA() {
         },
       }, { quoted: quotemek });
 
-      // Store command mappings
       await conn.updateCMDStore(sentMessage.key.id, CMD_ID_MAP);
 
-      // Register callback with replyMap if provided
       if (list_reply.callback) {
         conn.addReplyTracker(sentMessage.key.id, (m, responseText) => {
           list_reply.callback(m, responseText, { reply: (teks) => conn.sendMessage(jid, { text: teks }, { quoted: m }) });
@@ -140,7 +141,7 @@ async function connectToWA() {
     }
   };
 
-  // Reply with ad (fixed)
+  // Reply with ad
   conn.replyad = async (jid, teks, quotemek) => {
     return await conn.sendMessage(jid, {
       text: teks,
@@ -168,46 +169,51 @@ async function connectToWA() {
 
   // File sending from URL
   conn.sendFileUrl = async (jid, url, caption, quoted, options = {}) => {
-    let mime = '';
-    let res = await axios.head(url);
-    mime = res.headers['content-type'];
-    if (mime.split("/")[1] === "gif") {
-      return conn.sendMessage(jid, { video: await getBuffer(url), caption: caption, gifPlayback: true, ...options }, { quoted });
-    }
-    let type = mime.split("/")[0] + "Message";
-    if (mime === "application/pdf") {
-      return conn.sendMessage(jid, { document: await getBuffer(url), mimetype: 'application/pdf', caption: caption, ...options }, { quoted });
-    }
-    if (mime.split("/")[0] === "image") {
-      return conn.sendMessage(jid, { image: await getBuffer(url), caption: caption, ...options }, { quoted });
-    }
-    if (mime.split("/")[0] === "video") {
-      return conn.sendMessage(jid, { video: await getBuffer(url), caption: caption, mimetype: 'video/mp4', ...options }, { quoted });
-    }
-    if (mime.split("/")[0] === "audio") {
-      return conn.sendMessage(jid, { audio: await getBuffer(url), caption: caption, mimetype: 'audio/mpeg', ...options }, { quoted });
+    try {
+      let mime = '';
+      let res = await axios.head(url);
+      mime = res.headers['content-type'];
+      if (mime.split("/")[1] === "gif") {
+        return conn.sendMessage(jid, { video: await getBuffer(url), caption: caption, gifPlayback: true, ...options }, { quoted });
+      }
+      let type = mime.split("/")[0] + "Message";
+      if (mime === "application/pdf") {
+        return conn.sendMessage(jid, { document: await getBuffer(url), mimetype: 'application/pdf', caption: caption, ...options }, { quoted });
+      }
+      if (mime.split("/")[0] === "image") {
+        return conn.sendMessage(jid, { image: await getBuffer(url), caption: caption, ...options }, { quoted });
+      }
+      if (mime.split("/")[0] === "video") {
+        return conn.sendMessage(jid, { video: await getBuffer(url), caption: caption, mimetype: 'video/mp4', ...options }, { quoted });
+      }
+      if (mime.split("/")[0] === "audio") {
+        return conn.sendMessage(jid, { audio: await getBuffer(url), caption: caption, mimetype: 'audio/mpeg', ...options }, { quoted });
+      }
+    } catch (e) {
+      console.error('Error in sendFileUrl:', e);
+      return conn.sendMessage(jid, { text: '*Error: Failed to send file!*' }, { quoted });
     }
   };
 
   conn.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
-      if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+      if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
         connectToWA();
       }
     } else if (connection === 'open') {
       console.log('😼 Installing... ');
-      const path = require('path');
-      fs.readdirSync("./plugins/").forEach((plugin) => {
-        if (path.extname(plugin).toLowerCase() == ".js") {
-          require("./plugins/" + plugin);
-        }
-      });
-      console.log('Plugins installed successful ✅');
-      console.log('Bot connected to whatsapp ✅');
+      try {
+        const path = require('path');
+        fs.readdirSync("./plugins/").forEach((plugin) => {
+          if (path.extname(plugin).toLowerCase() == ".js") {
+            require("./plugins/" + plugin);
+          }
+        });
+        console.log('Plugins installed successful ✅');
+        console.log('Bot connected to whatsapp ✅');
 
-      const up = `╭━━━〔 HIRAN  MD  V4 〕━━━╮
-
+        const up = `╭━━━〔 HIRAN  MD  V4 〕━━━╮
 ┃
 ┃ 🤖 HIRAN MD OFFICIAL
 ┃ 𝙋𝙤𝙬𝙚𝙧𝙛𝙪𝙡 𝙈𝙪𝙡𝙩𝙞𝙙𝙚𝙫𝙞𝙘𝙚 𝘽𝙤𝙩
@@ -230,10 +236,13 @@ async function connectToWA() {
 ┃ © Powered by Hiranya Sathsara
 ╰━━━━━━━━━━━━━━━━━━━╯`;
 
-      conn.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
-        image: { url: "https://files.catbox.moe/lacqi4.jpg" },
-        caption: up
-      });
+        conn.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
+          image: { url: "https://files.catbox.moe/lacqi4.jpg" },
+          caption: up
+        });
+      } catch (e) {
+        console.error('Error loading plugins:', e);
+      }
     }
   });
 
@@ -246,7 +255,6 @@ async function connectToWA() {
       mek.message = (getContentType(mek.message) === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message;
       const m = sms(conn, mek);
       const type = getContentType(mek.message);
-      const content = JSON.stringify(mek.message);
       const from = mek.key.remoteJid;
       const quoted = (type == 'extendedTextMessage' && mek.message.extendedTextMessage.contextInfo != null) ? mek.message.extendedTextMessage.contextInfo.quotedMessage || [] : [];
       const body = (type === 'conversation') ? mek.message.conversation : (type === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : (type == 'imageMessage') && mek.message.imageMessage.caption ? mek.message.imageMessage.caption : (type == 'videoMessage') && mek.message.videoMessage.caption ? mek.message.videoMessage.caption : '';
@@ -262,13 +270,12 @@ async function connectToWA() {
       const isMe = botNumber.includes(senderNumber);
       const isOwner = ownerNumber.includes(senderNumber) || isMe;
       const botNumber2 = await jidNormalizedUser(conn.user.id);
-      const groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => {}) : '';
+      const groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => ({})) : '';
       const groupName = isGroup ? groupMetadata.subject : '';
       const participants = isGroup ? await groupMetadata.participants : '';
       const groupAdmins = isGroup ? await getGroupAdmins(participants) : '';
       const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false;
       const isAdmins = isGroup ? groupAdmins.includes(sender) : false;
-      const isReact = m.message.reactionMessage ? true : false;
 
       const reply = (teks) => {
         conn.sendMessage(from, { text: teks }, { quoted: mek });
@@ -304,7 +311,7 @@ async function connectToWA() {
 
       // Anti-bad word functionality
       if (config.ANTI_BAD && isBotAdmins && isGroup && !isAdmins && !isOwner) {
-        const badWords = await fetchJson("https://github.com/vihangayt0/server-/raw/main/xeonsl_bad.json");
+        const badWords = await fetchJson("https://github.com/vihangayt0/server-/raw/main/xeonsl_bad.json").catch(e => []);
         for (let word of badWords) {
           if (body.toLowerCase().includes(word) && !body.includes('tent') && !body.includes('docu') && !body.includes('http')) {
             await conn.sendMessage(from, { delete: mek.key });
@@ -336,15 +343,6 @@ async function connectToWA() {
           await conn.groupParticipantsUpdate(from, [sender], 'remove');
         }
       }
-
-     /* // Voice note responses
-      const voiceUrl = 'https://gist.github.com/VajiraTech/32826daa4c68497b1545c7c19160d3e9/raw';
-      let { data: voiceData } = await axios.get(voiceUrl);
-      for (let vr in voiceData) {
-        if (new RegExp(`\\b${vr}\\b`, 'gi').test(body)) {
-          await conn.sendMessage(from, { audio: { url: voiceData[vr] }, mimetype: 'audio/mpeg', ptt: true }, { quoted: mek });
-        }
-      }*/
 
       // Command handling
       const events = require('./command');
@@ -382,12 +380,10 @@ async function connectToWA() {
         case 'jid':
           reply(from);
           break;
-        case 'device': {
-          const deviceq = mek.message?.extendedTextMessage?.contextInfo?.stanzaId ? getDevice(mek.message.extendedTextMessage.contextInfo.stanzaId) : 'unknown';
-          reply("*User is using* _*WhatsApp " + deviceq + " version*_");
+        case 'device':
+          reply("*User is using* _*WhatsApp unknown version*_");
           break;
-        }
-        case 'ex': {
+        case 'ex':
           if (senderNumber === ownerNumber[0]) {
             const { exec } = require("child_process");
             exec(q, (err, stdout) => {
@@ -396,8 +392,7 @@ async function connectToWA() {
             });
           }
           break;
-        }
-        case 'apprv': {
+        case 'apprv':
           if (senderNumber === ownerNumber[0]) {
             let reqlist = await conn.groupRequestParticipantsList(from);
             for (let i = 0; i < reqlist.length; i++) {
@@ -409,8 +404,7 @@ async function connectToWA() {
             }
           }
           break;
-        }
-        case 'rm212': {
+        case 'rm212':
           if (senderNumber === ownerNumber[0]) {
             for (let i = 0; i < participants.length; i++) {
               if (participants[i].id.startsWith("212")) {
@@ -419,12 +413,10 @@ async function connectToWA() {
             }
           }
           break;
-        }
-        case 'rtf': {
+        case 'rtf':
           console.log("rtf command triggered");
           break;
-        }
-        case 'ev': {
+        case 'ev':
           if (senderNumber === ownerNumber[0]) {
             let code2 = q.replace("°", ".toString()");
             try {
@@ -439,7 +431,6 @@ async function connectToWA() {
             }
           }
           break;
-        }
       }
     } catch (e) {
       console.error("[ERROR] " + e);
