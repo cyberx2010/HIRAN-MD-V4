@@ -28,7 +28,7 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
             title: "🎥 Movie Search Results",
             rows: res.data.map((item, index) => ({
                 title: `${item.title || 'Unknown Title'} (${item.year || 'N/A'})`,
-                rowId: `${prefix}cine ${item.url}±${index + 1}` // Include URL and index
+                rowId: `${prefix}cine ${item.url}±${index + 1}`
             }))
         }];
 
@@ -47,10 +47,10 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
                     const [, url, index] = responseText.split('±');
                     if (!url || !index) return await reply('🚩 *Invalid movie selection!*');
 
-                    // Fetch movie details using cinedl API
+                    // Fetch movie details
                     const apiRes = await fetchJson(`https://cinesub-info.vercel.app/?url=${url}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`);
 
-                    if (!apiRes.data || !apiRes.dl_links) {
+                    if (!apiRes.data) {
                         return await reply('*Error: No details found for this movie!*');
                     }
 
@@ -65,10 +65,10 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
                     // Create download options
                     const downloadRows = Array.isArray(apiRes.dl_links) ? apiRes.dl_links.map((item, idx) => ({
                         title: `${item.quality} (${item.size})`,
-                        rowId: `${prefix}cinedl ${apiRes.data.image}±${item.link}±${apiRes.data.title}±${item.quality}`
+                        rowId: `${prefix}cinedl ${apiRes.data.image || ''}±${item.link}±${apiRes.data.title || 'Unknown'}±${item.quality}`
                     })) : [];
 
-                    // Create sections for the new list message
+                    // Create sections
                     const detailSections = [
                         {
                             title: "📥 Download Options",
@@ -83,7 +83,7 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
                         }
                     ];
 
-                    // Send new list message with poster and download/details options
+                    // Send new list message
                     await conn.replyList(from, {
                         image: { url: apiRes.data.image?.replace("fit=", "") || 'https://files.catbox.moe/4fsn8g.jpg' },
                         text: `*Selected Movie: ${apiRes.data.title || 'Unknown'}*\n\nReply with a number to select an option!`,
@@ -92,24 +92,28 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
                         buttonText: "*Reply Below Number 🔢*",
                         sections: detailSections,
                         callback: async (m, subResponseText, { reply }) => {
-                            if (subResponseText.startsWith(prefix + 'cinedl')) {
-                                const [, image, link, title, quality] = subResponseText.split('±');
-                                await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
-                                // Optionally, implement download logic here
-                            } else if (subResponseText.startsWith(prefix + 'cine_details')) {
-                                const data = JSON.parse(decodeURIComponent(subResponseText.split(' ')[1]));
-                                const detailsCap = `*☘️ Title ➜* *${data.title || 'Unknown'}*\n\n` +
-                                                  `*📆 Release ➜* _${data.date || 'N/A'}_\n` +
-                                                  `*⭐ Rating ➜* _${data.imdb || 'N/A'}_\n` +
-                                                  `*⏰ Runtime ➜* _${data.runtime || 'N/A'}_\n` +
-                                                  `*🌎 Country ➜* _${data.country || 'N/A'}_\n` +
-                                                  `*💁‍♂️ Subtitle Author ➜* _${data.subtitle_author || 'N/A'}_\n`;
-                                await conn.sendMessage(from, {
-                                    image: { url: data.image?.replace("fit=", "") || 'https://files.catbox.moe/4fsn8g.jpg' },
-                                    caption: detailsCap
-                                }, { quoted: m });
-                            } else {
-                                await reply('🚩 *Invalid selection!*');
+                            try {
+                                if (subResponseText.startsWith(prefix + 'cinedl')) {
+                                    const [, image, link, title, quality] = subResponseText.split('±');
+                                    await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
+                                } else if (subResponseText.startsWith(prefix + 'cine_details')) {
+                                    const data = JSON.parse(decodeURIComponent(subResponseText.split(' ')[1]));
+                                    const detailsCap = `*☘️ Title ➜* *${data.title || 'Unknown'}*\n\n` +
+                                                      `*📆 Release ➜* _${data.date || 'N/A'}_\n` +
+                                                      `*⭐ Rating ➜* _${data.imdb || 'N/A'}_\n` +
+                                                      `*⏰ Runtime ➜* _${data.runtime || 'N/A'}_\n` +
+                                                      `*🌎 Country ➜* _${data.country || 'N/A'}_\n` +
+                                                      `*💁‍♂️ Subtitle Author ➜* _${data.subtitle_author || 'N/A'}_\n`;
+                                    await conn.sendMessage(from, {
+                                        image: { url: data.image?.replace("fit=", "") || 'https://files.catbox.moe/4fsn8g.jpg' },
+                                        caption: detailsCap
+                                    }, { quoted: m });
+                                } else {
+                                    await reply('🚩 *Invalid selection!*');
+                                }
+                            } catch (e) {
+                                console.error('Error in sub-callback:', e);
+                                await reply(`*Error: ${e.message || 'Invalid selection!'}*`);
                             }
                         }
                     }, m);
@@ -120,16 +124,12 @@ async (conn, m, mek, { from, q, prefix, reply }) => {
             }
         };
 
-        // Send the initial list message
         await conn.replyList(from, listMessage, mek);
-
     } catch (e) {
         console.error('Error in cine command:', e);
         await reply(`*Error: ${e.message || 'Something went wrong!'}*`);
     }
 });
-
-//_______________________________________________INFO
 
 cmd({
     pattern: "cinedl",
@@ -138,11 +138,15 @@ cmd({
     desc: "Movie downloader",
     filename: __filename
 },
-async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
+async (conn, m, mek, { from, q, prefix, reply }) => {
     try {
         if (!q) return await reply('*Please provide a URL!*');
 
         let res = await fetchJson(`https://cinesub-info.vercel.app/?url=${q}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`);
+
+        if (!res.data) {
+            return await conn.sendMessage(from, { text: '*Error: No movie data found!*' }, { quoted: mek });
+        }
 
         let cap = `*☘️ Title ➜* *${res.data.title || 'Unknown'}*\n\n` +
                   `*📆 Release ➜* _${res.data.date || 'N/A'}_\n` +
@@ -151,22 +155,17 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
                   `*🌎 Country ➜* _${res.data.country || 'N/A'}_\n` +
                   `*💁‍♂️ Subtitle Author ➜* _${res.data.subtitle_author || 'N/A'}_\n`;
 
-        if (!res.data || !res.dl_links || res.dl_links.length === 0) {
+        if (!res.dl_links || !Array.isArray(res.dl_links) || res.dl_links.length === 0) {
             return await conn.sendMessage(from, { text: '*Error: No download links found!*' }, { quoted: mek });
         }
 
-        const sections = [];
-
-        if (Array.isArray(res.dl_links)) {
-            const cinesubzRows = res.dl_links.map(item => ({
+        const sections = [{
+            title: "🎬 Cinesubz",
+            rows: res.dl_links.map(item => ({
                 title: `${item.quality} (${item.size})`,
-                rowId: `${prefix}cinedl ${res.data.image}±${item.link}±${res.data.title}±${item.quality}`
-            }));
-            sections.push({
-                title: "🎬 Cinesubz",
-                rows: cinesubzRows
-            });
-        }
+                rowId: `${prefix}cinedl ${res.data.image || ''}±${item.link}±${res.data.title || 'Unknown'}±${item.quality}`
+            }))
+        }];
 
         const listMessage = {
             image: { url: res.data.image?.replace("fit=", "") || 'https://files.catbox.moe/4fsn8g.jpg' },
@@ -176,24 +175,26 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
             buttonText: "*Reply Below Number 🔢*",
             sections,
             callback: async (m, responseText, { reply }) => {
-                if (responseText.startsWith(prefix + 'cinedl')) {
-                    const [, image, link, title, quality] = responseText.split('±');
-                    await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
-                    // Optionally, implement download logic here
-                } else {
-                    await reply('🚩 *Invalid selection!*');
+                try {
+                    if (responseText.startsWith(prefix + 'cinedl')) {
+                        const [, image, link, title, quality] = responseText.split('±');
+                        await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
+                    } else {
+                        await reply('🚩 *Invalid selection!*');
+                    }
+                } catch (e) {
+                    console.error('Error in cinedl callback:', e);
+                    await reply(`*Error: ${e.message || 'Invalid selection!'}*`);
                 }
             }
         };
 
-        return await conn.replyList(from, listMessage, mek);
+        await conn.replyList(from, listMessage, mek);
     } catch (e) {
         console.error('Error in cinedl command:', e);
         await conn.sendMessage(from, { text: '*Error: Something went wrong!*' }, { quoted: mek });
     }
 });
-
-//_______________________________________________DETAILS
 
 cmd({
     pattern: "cine_details",
