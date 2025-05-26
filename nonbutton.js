@@ -1,12 +1,10 @@
 const { getBuffer } = require('./lib/functions');
 
-// Validate input (e.g., "1" or "1.1")
 function btregex(dta) {
   const regex = /^[0-9]+(\.[0-9]+)?$/;
   return regex.test(dta);
 }
 
-// Send button message (text-based)
 const sendButtonMessage = async (conn, jid, msgData, quotemek) => {
   let result = "";
   const CMD_ID_MAP = [];
@@ -25,12 +23,12 @@ const sendButtonMessage = async (conn, jid, msgData, quotemek) => {
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363182681793169@newsletter',
+        newsletterJid: '120363401446603948@newsletter',
         serverMessageId: 127,
       },
       externalAdReply: {
-        title: '🪄 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🧚',
-        body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙ️ᴏᴛ',
+        title: '🪄 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🧚‍♂️',
+        body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ᴜꜱᴇʀ ʙᴏᴛ',
         mediaType: 1,
         sourceUrl: "https://wa.me/94768698018",
         thumbnailUrl: 'https://files.catbox.moe/4fsn8g.jpg',
@@ -40,10 +38,8 @@ const sendButtonMessage = async (conn, jid, msgData, quotemek) => {
     },
   }, { quoted: quotemek });
 
-  // Store command mappings
   await conn.updateCMDStore(sentMessage.key.id, CMD_ID_MAP);
 
-  // Register callback
   if (msgData.callback) {
     conn.addReplyTracker(sentMessage.key.id, (m, responseText) => {
       msgData.callback(m, responseText, { reply: (teks) => conn.sendMessage(jid, { text: teks }, { quoted: m }) });
@@ -51,7 +47,6 @@ const sendButtonMessage = async (conn, jid, msgData, quotemek) => {
   }
 };
 
-// Send list message (text-based)
 const listMessage = async (conn, jid, msgData, quotemek) => {
   let result = "";
   const CMD_ID_MAP = [];
@@ -82,8 +77,8 @@ const listMessage = async (conn, jid, msgData, quotemek) => {
         serverMessageId: 127,
       },
       externalAdReply: {
-        title: '🪄 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🧚',
-        body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ʙ️ᴏᴛ',
+        title: '🪄 𝐇𝐈𝐑𝐀𝐍 𝐌𝐃 🧚‍♂️',
+        body: 'ᴀ ꜱɪᴍᴘʟᴇ ᴡʜᴀᴛꜱᴀᴘᴘ ᴜꜱᴇʀ ʙᴏᴛ',
         mediaType: 1,
         sourceUrl: "https://wa.me/94768698018",
         thumbnailUrl: 'https://files.catbox.moe/4fsn8g.jpg',
@@ -93,10 +88,8 @@ const listMessage = async (conn, jid, msgData, quotemek) => {
     },
   }, { quoted: quotemek });
 
-  // Store command mappings
   await conn.updateCMDStore(sentMessage.key.id, CMD_ID_MAP);
 
-  // Register callback
   if (msgData.callback) {
     conn.addReplyTracker(sentMessage.key.id, (m, responseText) => {
       msgData.callback(m, responseText, { reply: (teks) => conn.sendMessage(jid, { text: teks }, { quoted: m }) });
