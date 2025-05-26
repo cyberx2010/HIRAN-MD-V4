@@ -1,136 +1,121 @@
-const axios = require("axios");
-const { cmd } = require('../command');
-const { fetchJson } = require('../lib/functions');
+const config = require('../config')
+const { cmd, commands } = require('../command')
+const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson} = require('../lib/functions')
+const axios = require('axios');
+const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const { Buffer } = require('buffer'); 
+const FormData = require('form-data');
+const fs = require('fs');
+const path = require('path');
+const fileType = require("file-type")
+const l = console.log
 
 cmd({
-  pattern: "sinhalasub",
-  alias: ["ssub"],
-  desc: "Search Sinhala Subtitles",
-  category: "movie",
-  use: ".sinhalasub 2024",
-  filename: __filename
+    pattern: "cine",
+    react: '🔎',
+    category: "movie",
+    alias: ["cinesubz"],
+    desc: "Movie downloader with Sinhala subtitles",
+    filename: __filename
 },
-async (conn, mek, m, { from, q, reply, prefix }) => {
-  try {
-    if (!q) return reply("text එකක් දියන් යකූ (e.g. `.ssub 2024`)");
+async (conn, m, mek, { from, q, prefix, reply }) => {
+    try {
+        if (!q) return await reply('*Please provide a search query!*');
 
-    const res = await fetchJson(`https://nethu-api-ashy.vercel.app/movie/sinhalasub/search?text=${encodeURIComponent(q)}`);
+        // Fetch movie data from API
+        const apiUrl = config.CINE_API_URL || 'https://darksadas-yt-cinezub-search.vercel.app/';
+        const res = await fetchJson(`${apiUrl}?query=${encodeURIComponent(q)}`);
 
-    if (!res.result || res.result.data.length === 0) {
-      return reply("api call කරන්නෑ.");
+        // Validate API response
+        if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
+            return await reply('*No movies found for your query!*');
+        }
+
+        // Construct the result message
+        let resultText =` *𝘾𝙄𝙉𝙀𝙎𝙐𝘽𝙕 𝙈𝙊𝙑𝙄𝙀 𝙎𝙀𝘼𝙍𝘾𝙃 𝙍𝙀𝙎𝙐𝙇𝙏𝙎 𝙁𝙊𝙍:* ${q}\n\n*Reply Below Number 🔢*\n\n`;
+        res.data.forEach((item, index) => {
+            const title = item.title || 'Unknown Title';
+            const year = item.year || 'N/A'; // Adjust based on API response
+            resultText += `*${index + 1} ||* ${title} (${year}) Sinhala Subtitles | සිංහල උපසිරසි සමඟ\n`;
+        });
+        resultText += `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`;
+
+        // Send the image with the caption
+        const imageUrl = 'https://files.catbox.moe/4fsn8g.jpg';
+        await conn.sendMessage(from, {
+            image: { url: imageUrl },
+            caption: resultText
+        }, { quoted: mek });
+
+    } catch (e) {
+        console.error('Error in cine command:', e);
+        await reply(`*Error: ${e.message || 'Something went wrong!'}*`);
     }
-
-    const list = res.result.data.slice(0, 10).map((item, index) => ({
-      title: `${index + 1}. ${item.title}`,
-      rowId: `${prefix}sub_search ${item.link}`
-    }));
-
-    const sections = [{
-      title: "🎬 Sinhala Subtitle Results",
-      rows: list
-    }];
-
-    await conn.sendMessage(from, {
-      text: `*Sinhala Subtitle Search Results for:* ${q}`,
-      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʟᴏᴋᴜ-ᴍᴅ 🔒🪄",
-      title: "",
-      buttonText: "🔢 Choose a Movie",
-      sections: sections
-    }, { quoted: mek });
-
-  } catch (e) {
-    reply('*Error !!*');
-    console.error(e);
-  }
 });
 
+
+
+//_______________________________________________INFO
+
 cmd({
-  pattern: "sub_search",
-  react: "🔎",
+  pattern: "cinedl",
   dontAddCommandList: true,
+  react: '🎥',
+  desc: "movie downloader",
   filename: __filename
 },
-async (conn, mek, m, { from, q, reply, prefix }) => {
+async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
   try {
-    if (!q) return reply("link eka diyan");
+    if (!q) return await reply('*please give me url!..*');
 
-    const res = await fetchJson(`https://nethu-api-ashy.vercel.app/movie/sinhalasub/movie?url=${encodeURIComponent(q)}`);
-    const data = res?.result?.data;
-    if (!data) return reply("api eka call karanna bh");
+    let res = await fetchJson(`https://cinesub-info.vercel.app/?url=${q}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`);
 
-    const caption = `
-🎬 *Title* : ${data.title || "Not Available"}
-🗓️ *Date* : ${data.date}
-🌍 *Country* : ${data.country}
-🎥 *Director* : ${data.director}
-⭐ *TMDB Rating* : ${data.tmdbRate}
-🗳️ *SinhalaSub Votes* : ${data.sinhalasubVote}
-✍️ *Subtitle Author* : ${data.subtitle_author}
-🎞️ *Category* : ${data.category.join(", ")}
+    let cap = `*☘️ Tιтle ➜* *${res.data.title}*\n\n` +
+              `*📆 Rᴇʟᴇᴀꜱᴇ ➜* _${res.data.date}_\n` +
+              `*⭐ Rᴀᴛɪɴɢ ➜* _${res.data.imdb}_\n` +
+              `*⏰ Rᴜɴᴛɪᴍᴇ ➜* _${res.data.runtime}_\n` +
+              `*🌎 Cᴏᴜɴᴛʀʏ ➜* _${res.data.country}_\n` +
+              `*💁‍♂️ Dɪʀᴇᴄᴛᴏʀ ➜* _${res.data.subtitle_author}_\n`;
 
-🧾 *Description:* 
-${data.description}
-`.trim();
+    if (!res.data || !res.dl_links || res.dl_links.length === 0) {
+      return await conn.sendMessage(from, { text: 'erro !' }, { quoted: mek });
+    }
 
     const sections = [];
 
-    if (Array.isArray(data.pixeldrain_dl)) {
-      const pixeldrainRows = data.pixeldrain_dl.map(item => ({
+    if (Array.isArray(res.dl_links)) {
+      const cinesubzRows = res.dl_links.map(item => ({
         title: `${item.quality} (${item.size})`,
-        rowId: `${prefix}sub_dl pixeldrain|${item.link}`
+        rowId: `${prefix}cinedl ${res.data.image}±${item.link}±${res.data.title}±${item.quality}`
       }));
       sections.push({
-        title: "📥 PixelDrain",
-        rows: pixeldrainRows
+        title: "🎬 Cinesubz",
+        rows: cinesubzRows
       });
     }
 
-    if (Array.isArray(data.ddl_dl)) {
-      const ddlRows = data.ddl_dl.map(item => ({
-        title: `${item.quality} (${item.size})`,
-        rowId: `${prefix}sub_dl ddl|${item.link}`
-      }));
-      sections.push({
-        title: "📥 DDL",
-        rows: ddlRows
-      });
-    }
-
-    await conn.sendMessage(from, {
-      text: caption,
-      footer: "> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʟᴏᴋᴜ-ᴍᴅ 🔒🪄",
-      title: "",
-      buttonText: "`Reply Below Number` 🔢",
+    const listMessage = {
+      image: { url: res.data.image.replace("fit=", "") },
+      text: cap,
+      footer: `\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜɪʀᴀɴ-ᴍᴅ 🔒🪄`,
+      title: "📥 Download Option",
+      buttonText: "*Reply Below Number 🔢*",
       sections,
-      image: { url: data.image }
-    }, { quoted: mek });
+      callback: async (m, responseText, { reply }) => {
+        // Handle the selected rowId
+        if (responseText.startsWith(prefix + 'cinedl')) {
+          const [, image, link, title, quality] = responseText.split('±');
+          await reply(`🎥 *Downloading ${title} (${quality})*\n🔗 *Link*: ${link}`);
+          // Optionally, implement download logic here
+        } else {
+          await reply('🚩 *Invalid selection!*');
+        }
+      }
+    };
 
+    return await conn.replyList(from, listMessage, mek);
   } catch (e) {
-    console.error(e);
-    await reply('*Error !!*');
-  }
-});
-
-cmd({
-  pattern: "sub_dl",
-  fromMe: false,
-  desc: "Downloads the subtitle file from selected quality link",
-  type: "download",
-  filename: __filename
-},
-async (conn, mek, m, { q, reply }) => {
-  try {
-    const [type, link] = q.split("|");
-    if (!link) return reply("❌ Link direct karanna bah");
-
-    await conn.sendMessage(m.chat, {
-      document: { url: link },
-      mimetype: 'video/mp4',
-      fileName: 'ʟᴏᴋᴜ-ᴍᴅ-ꜱɪɴʜᴀʟᴀꜱᴜʙ_ᴅʟ.mp4'
-    }, { quoted: mek });
-
-  } catch (e) {
-    reply("❌ Download error.");
-    console.error(e);
+    console.log(e);
+    await conn.sendMessage(from, { text: '🚩 *Error !!*' }, { quoted: mek });
   }
 });
