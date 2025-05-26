@@ -19,8 +19,12 @@ module.exports = {
   AUTO_TYPING: process.env.AUTO_TYPING || "false",
   FAKE_RECORDING: process.env.FAKE_RECORDING || "true",
   MOVIE_API_KEY: process.env.MOVIE_API_KEY || "sky|97e02fda9faf1bf4823b9ea90816a254b38969e5",
-
-  // Added for movie downloader support
   MOVIE_JID: process.env.MOVIE_JID || "120363012345678901@g.us",  // Replace with your group ID or leave as-is
-  BOT_NAME: process.env.BOT_NAME || "HIRAN MD BOT"
+  BOT_NAME: process.env.BOT_NAME || "HIRAN MD BOT",
+  ANTI_LINK: true,
+  ANTI_BAD: true,
+  ANTI_BOT: true,
+  CINE_API_URL: 'https://darksadas-yt-cinezub-search.vercel.app/',
+  CINE_API_KEY: 'dinithimegana',
+  // ... other config options
 };
