@@ -1,233 +1,267 @@
-const { cmd } = require('../command');8
 const axios = require('axios');
+const cheerio = require('cheerio');
+const { cmd, commands } = require('../command');
+const { getBuffer, getRandom, isUrl, fetchJson, jsonformat } = require('../lib/functions');
 
-// Function to get current date and time in +0530 timezone
-function getCurrentDateTime() {
-    const now = new Date();
-    const offset = 5.5 * 60 * 60 * 1000; // +0530 offset in milliseconds
-    const localTime = new Date(now.getTime() + offset);
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const day = days[localTime.getUTCDay()];
-    const date = localTime.toISOString().split('T')[0];
-    const time = localTime.toISOString().split('T')[1].split('.')[0];
-    return `${day}, ${date}, ${time} +0530`;
-}
-
-// Function to search movies using CineSubz API
-async function searchMovies(query) {
-    const api = {
-        url: `https://cinesubz-api-zazie.vercel.app/api/search?q=${encodeURIComponent(query)}`,
-        name: "CineSubz",
-        parseResults: (data) => {
-            if (!data || !data.status || !data.result || !data.result.data || !Array.isArray(data.result.data)) {
-                throw new Error("Invalid response structure");
-            }
-            return data.result.data.map(item => ({
-                title: item.title || "Unknown Title",
-                link: item.link || "",
-                year: item.year || "N/A",
-            }));
-        },
-    };
-
-    let results = [];
-    let errorMessages = [];
-
-    try {
-        const response = await axios.get(api.url, { timeout: 10000 });
-        results = api.parseResults(response.data);
-        if (results.length === 0) {
-            errorMessages.push(`${api.name}: No results found`);
-        }
-    } catch (err) {
-        errorMessages.push(`${api.name}: ${err.message}`);
-    }
-
-    return { results: results.slice(0, 10), errors: errorMessages };
-}
-
-// Function to fetch movie details and download links
-async function getMovieDetails(movieUrl) {
-    const apiUrl = `https://cinesubz-api-zazie.vercel.app/api/movie?url=${encodeURIComponent(movieUrl)}`;
-    try {
-        const response = await axios.get(apiUrl, { timeout: 10000 });
-        const movieData = response.data.result.data;
-        if (!movieData) {
-            throw new Error("No movie data returned");
-        }
-        if (!movieData.dl_links || movieData.dl_links.length === 0) {
-            throw new Error("No download links found");
-        }
-        return {
-            title: movieData.title || "Unknown Title",
-            imdb: movieData.imdbRate || "N/A",
-            date: movieData.date || "N/A",
-            country: movieData.country || "N/A",
-            runtime: movieData.duration || "N/A",
-            image: movieData.image || "",
-            dl_links: movieData.dl_links.map(link => ({
-                quality: link.quality || "Unknown Quality",
-                size: link.size || "Unknown Size",
-                link: link.link || "",
-            })),
-        };
-    } catch (err) {
-        throw new Error(`Failed to fetch movie details: ${err.message}`);
-    }
-}
-
-// Function to get direct download link
-async function getDirectDownloadLink(downloadLink) {
-    const apiUrl = `https://cinesubz-api-zazie.vercel.app/api/links?url=${encodeURIComponent(downloadLink)}`;
-    try {
-        const response = await axios.get(apiUrl, { timeout: 10000 });
-        const linkData = response.data.result;
-        if (!linkData || !linkData.direct) {
-            throw new Error("No direct download link found");
-        }
-        return linkData.direct;
-    } catch (err) {
-        throw new Error(`Failed to fetch direct download link: ${err.message}`);
-    }
-}
-
-// Command for movies
 cmd({
-    pattern: "sub",
-    alias: ["subfilm"],
-    react: "🎬",
-    desc: "Search and download movies from CineSubz",
-    category: "movie",
-    filename: __filename,
+    pattern: "sinhalasub",
+    react: '🔎',
+    category: "search",
+    desc: "Search and download movies from sinhalasub.lk",
+    filename: __filename
 },
-async (conn, mek, m, { from, q, reply }) => {
+async (conn, mek, m, { from, q, reply, quoted }) => {
     try {
-        // Step 1: Validate input query
-        if (!q) {
-            return await reply("*Please provide a movie name to search! (e.g., Deadpool)*");
-        }
+        if (!q) return await reply('*Please provide a movie name!*');
 
-        // Step 2: Search movies
-        const { results, errors } = await searchMovies(q);
-        if (results.length === 0) {
-            return await reply(`*No movies found for:* "${q}"\n${errors.join('\n')}\n*Please try a different search term.*`);
-        }
+        // Step 1: Search for movies
+        const url = `https://sinhalasub.lk/?s=${encodeURIComponent(q)}`;
+        const response = await axios.get(url);
+        const $ = cheerio.load(response.data);
+        const data = $(".search-page .result-item article")
+            .map((index, element) => ({
+                No: index + 1,
+                Title: $(element).find(".details .title a").text().trim(),
+                Desc: $(element).find('.details .contenido p').text().trim(),
+                Img: $(element).find('.image img').attr("src"),
+                Type: $(element).find('.image span').text().trim(),
+                Link: $(element).find(".details .title a").attr("href"),
+                Year: $(element).find('.details span .rating').text().trim(),
+                Rating: $(element).find('.details span').text().trim(),
+            })).get();
 
-        // Step 3: Send search results to user
-        let resultsMessage = `✨ *SOLO-LEVELING MOVIE DOWNLOADER* ✨\n\n🎥 *Search Results for* "${q}" (Date: ${getCurrentDateTime()}):\n\n`;
-        results.forEach((result, index) => {
-            resultsMessage += `*${index + 1}.* ${result.title} (${result.year}) [CineSubz]\n🔗 Link: ${result.link}\n\n`;
-        });
-        resultsMessage += `\n📩 *Please reply with the number of the movie you want to download.*`;
+        if (data.length < 1) return await conn.sendMessage(from, { text: 'No results found!' }, { quoted: mek });
 
-        const sentMsg = await conn.sendMessage(from, { text: resultsMessage }, { quoted: mek });
-        const messageID = sentMsg.key.id;
+        // Step 2: Check if user replied with a number to select a movie
+        if (quoted && quoted.text && /^\d+$/.test(quoted.text.trim())) {
+            const selectedNo = parseInt(quoted.text.trim()) - 1;
+            if (selectedNo < 0 || selectedNo >= data.length) return await reply('*Invalid selection!*');
 
-        // Step 4: Wait for user to select a movie
-        conn.addReplyTracker(messageID, async (mek, messageType) => {
-            if (!mek.message) return;
-            const from = mek.key.remoteJid;
-            const selectedNumber = parseInt(messageType.trim());
-            if (!isNaN(selectedNumber) && selectedNumber > 0 && selectedNumber <= results.length) {
-                const selectedMovie = results[selectedNumber - 1];
+            const selectedMovie = data[selectedNo];
+            const movieResponse = await axios.get(selectedMovie.Link);
+            const $x = cheerio.load(movieResponse.data);
+            const newsArticle = $x(".sheader").first();
+            const newsHeadline = newsArticle.find(".data .head h1").text().trim();
+            const date = newsArticle.find(".extra .date").text().trim();
+            const duration = newsArticle.find(".extra .runtime").text().trim();
+            const infoMovie = $x("#info").first();
+            const desc = infoMovie.find(".wp-content p").text().trim();
+            const rat = infoMovie.find("#repimdb strong").text().trim();
+            const img = newsArticle.find(".poster img").attr("src");
 
-                // Step 5: Fetch movie details
-                let movieData;
-                try {
-                    movieData = await getMovieDetails(selectedMovie.link);
-                } catch (err) {
-                    return await reply(`*Error fetching movie details:* ${err.message}\n*Try another movie or check the URL.*`);
-                }
-
-                // Step 6: Send available download links
-                let downloadMessage = `🎥 *${movieData.title}*\n\n*Available Download Links:*\n`;
-                movieData.dl_links.forEach((link, index) => {
-                    downloadMessage += `*${index + 1}.* ${link.quality} - ${link.size}\n\n`;
+            let download_links = [];
+            $x("#download > div > div > table > tbody > tr").each((c, d) => {
+                download_links.push({
+                    quality: $x(d).find("td > strong").text(),
+                    size: $x(d).find("td").eq(2).text(),
+                    link: $x(d).find("td > a").attr("href"),
                 });
-                downloadMessage += `\n📩 *Please reply with the number of the quality you want to download.*`;
+            });
 
-                const sentDownloadMsg = await conn.sendMessage(from, { text: downloadMessage }, { quoted: mek });
-                const downloadMessageID = sentDownloadMsg.key.id;
-
-                // Step 7: Wait for user to select a quality
-                conn.addReplyTracker(downloadMessageID, async (mek, downloadMessageType) => {
-                    if (!mek.message) return;
-                    const from = mek.key.remoteJid;
-                    const selectedQuality = parseInt(downloadMessageType.trim());
-                    if (!isNaN(selectedQuality) && selectedQuality > 0 && selectedQuality <= movieData.dl_links.length) {
-                        const selectedLink = movieData.dl_links[selectedQuality - 1];
-
-                        // Step 8: Fetch direct download link
-                        let directDownloadUrl;
-                        try {
-                            directDownloadUrl = await getDirectDownloadLink(selectedLink.link);
-                        } catch (err) {
-                            return await reply(`*Error fetching direct download link:* ${err.message}\n*Please try another quality or movie.*`);
-                        }
-
-                        // Step 9: Send the movie as a document
-                        await conn.sendMessage(from, { react: { text: '⬇️', key: sentDownloadMsg.key } });
-
-                        let downloadMessag = `
-🎬 *SOLO-LEVELING CINEMA* 🎥  
-╔══════════════════════════╗  
-   Your Gateway to  
-    🎥 Entertainment 🎥  
-╚══════════════════════════╝  
-
-✨ 🎥 **🎞 Movie:** *${movieData.title}*  
-
-⭐ *IMDB Rating:* *${movieData.imdb}*  
-📅 *Release Date:* *${movieData.date}*  
-🌍 *Country:* *${movieData.country}*  
-⏳ *Duration:* *${movieData.runtime}*  
-
-╔═════ஜ۩۞۩ஜ═════╗  
-© 2025 *SOLO-LEVELING*  
-🚀 *POWERED BY RUKSHAN*  
-📡 _Stay Connected. Stay Entertained!_  
-╚═════ஜ۩۞۩ஜ═════╝`;
-
-                        await conn.sendMessage(from, { react: { text: '⬆️', key: sentDownloadMsg.key } });
-
-                        await conn.sendMessage(from, {
-                            document: { url: directDownloadUrl },
-                            mimetype: "video/mp4",
-                            fileName: `${movieData.title} - ${selectedLink.quality}.mp4`,
-                            caption: downloadMessag,
-                            contextInfo: {
-                                mentionedJid: [],
-                                groupMentions: [],
-                                forwardingScore: 999,
-                                isForwarded: true,
-                                forwardedNewsletterMessageInfo: {
-                                    newsletterJid: '120363401755639074@newsletter',
-                                    newsletterName: "© SOLO-LEVELING 💚",
-                                    serverMessageId: 999,
-                                },
-                                externalAdReply: {
-                                    title: movieData.title,
-                                    body: '🎬 *SOLO-LEVELING CINEMA* 🎥',
-                                    mediaType: 1,
-                                    sourceUrl: selectedMovie.link,
-                                    thumbnailUrl: movieData.image,
-                                    renderLargerThumbnail: true,
-                                    showAdAttribution: true,
-                                },
-                            },
-                        }, { quoted: mek });
-
-                        await conn.sendMessage(from, { react: { text: '✅', key: sentDownloadMsg.key } });
-                    } else {
-                        await reply("Invalid selection. Please reply with a valid number.");
-                    }
-                });
-            } else {
-                await reply("Invalid selection. Please reply with a valid number.");
+            // Extract download URLs
+            const qualities = ['FHD 1080P', 'HD 720P', 'SD 480P'];
+            let downloadUrls = {};
+            for (let i = 0; i < Math.min(download_links.length, 3); i++) {
+                const shan = await axios.get(download_links[i].link);
+                const $p = cheerio.load(shan.data);
+                const link = $p("#link").attr("href");
+                const dat = link.split("https://pixeldrain.com/u/")[1];
+                downloadUrls[qualities[i]] = `https://pixeldrain.com/api/file/${dat}`;
             }
-        });
+
+            // Prepare message with download options
+            const msg = `📃 *T.C MOVIE DOWNLOADER*\n\n
+📃 *Title:* ${newsHeadline}\n
+🔗 *Link:* ${selectedMovie.Link}\n
+📅 *Year:* ${date}\n
+💫 *Rating:* ${rat}\n
+⏳ *Duration:* ${duration}\n
+📝 *Description:* ${desc}\n`;
+
+            const rows = [];
+            const rows1 = [];
+            const rows2 = [];
+            const rows3 = [];
+            for (const quality of qualities) {
+                if (downloadUrls[quality]) {
+                    rows.push({
+                        header: 'Select MP4 Type Movie',
+                        title: quality,
+                        description: '',
+                        id: `.downloadmp4 ${downloadUrls[quality]}`
+                    });
+                    rows1.push({
+                        header: 'Select MKV Type Movie',
+                        title: quality,
+                        description: '',
+                        id: `.downloadmkv ${downloadUrls[quality]}`
+                    });
+                    rows2.push({
+                        header: 'Select ZIP Type Movie',
+                        title: quality,
+                        description: '',
+                        id: `.downloadzip ${downloadUrls[quality]}`
+                    });
+                    rows3.push({
+                        header: 'Select RAR Type Movie',
+                        title: quality,
+                        description: '',
+                        id: `.downloadrar ${downloadUrls[quality]}`
+                    });
+                }
+            }
+
+            let buttons = [
+                {
+                    name: "single_select",
+                    buttonParamsJson: JSON.stringify({
+                        title: 'DOWNLOAD MP4 TYPE',
+                        sections: [{ title: 'Please select a quality', highlight_label: 'MP4', rows }]
+                    })
+                },
+                {
+                    name: "single_select",
+                    buttonParamsJson: JSON.stringify({
+                        title: 'DOWNLOAD MKV TYPE',
+                        sections: [{ title: 'Please select a quality', highlight_label: 'MKV', rows1 }]
+                    })
+                },
+                {
+                    name: "single_select",
+                    buttonParamsJson: JSON.stringify({
+                        title: 'DOWNLOAD ZIP TYPE',
+                        sections: [{ title: 'Please select a quality', highlight_label: 'ZIP', rows2 }]
+                    })
+                },
+                {
+                    name: "single_select",
+                    buttonParamsJson: JSON.stringify({
+                        title: 'DOWNLOAD RAR TYPE',
+                        sections: [{ title: 'Please select a quality', highlight_label: 'RAR', rows3 }]
+                    })
+                }
+            ];
+
+            let opts = {
+                image: img,
+                header: '🎬━_*T.C SINHALASUB DL*_━🎬',
+                footer: 'MOVIE DOWNLOADER BY TC',
+                body: msg
+            };
+
+            return await conn.sendButtonMessage(from, buttons, m, opts, { quoted: mek });
+        }
+
+        // Step 3: Send search results (non-button for .sinhalasub, button for .sinhalasub1 equivalent)
+        let textw = `🔎 *T.C MOVIE SEARCH*\n\n`;
+        for (const item of data) {
+            textw += `*⛓️ No:* ${item.No}\n`;
+            textw += `*📃 Title:* ${item.Title}\n`;
+            textw += `*📚 CatName:* ${item.Type}\n`;
+            textw += `*💫 Rating:* ${item.Rating}\n`;
+            textw += `*📅 Date:* ${item.Year}\n`;
+            textw += `*📎 Link:* ${item.Link}\n\n--------------------------------------------\n\n`;
+        }
+
+        const rows = data.map(item => ({
+            header: item.Title,
+            title: item.Type,
+            description: item.Year,
+            id: `.sinhalasub ${q}` // Keep the command to allow selection
+        }));
+
+        let buttons = [{
+            name: "single_select",
+            buttonParamsJson: JSON.stringify({
+                title: 'Select Movie 📥',
+                sections: [{
+                    title: 'Search By sinhalasub',
+                    highlight_label: 'T.C MOVIE-DL',
+                    rows
+                }]
+            })
+        }];
+
+        let opts = {
+            image: data[0].Img,
+            header: '🎬━_*T.C SINHALASUB DL*_━🎬',
+            footer: 'MOVIE DOWNLOADER BY TC',
+            body: `⏳ Search: ${q}\n📲 Top ${data.length} Results\n\n*Reply with the number of the movie to see details and download options.*`
+        };
+
+        // Send both non-button and button responses
+        await conn.sendMessage(from, { text: textw }, { quoted: mek });
+        await conn.sendButtonMessage(from, buttons, m, opts, { quoted: mek });
+        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
+
     } catch (e) {
-        console.error("Error during movie download:", e.message, e.stack);
-        reply(`*An error occurred while processing your request:* ${e.message}\n*Please try again later or use a different search term.*`);
+        console.log(e);
+        await reply('*Error occurred!*');
     }
 });
+
+// Download commands
+const downloadHandler = (type, ext) => async (conn, mek, m, { from, q, reply }) => {
+    if (!q) return await reply('*Please provide a direct URL!*');
+
+    try {
+        const mediaUrl = q.trim();
+        const response = await axios.get(mediaUrl, { responseType: 'arraybuffer' });
+        const mediaBuffer = Buffer.from(response.data, 'binary');
+
+        const vajiralod = [
+            "《 █▒▒▒▒▒▒▒▒▒▒▒》10%",
+            "《 ████▒▒▒▒▒▒▒▒》30%",
+            "《 ███████▒▒▒▒▒》50%",
+            "《 ██████████▒▒》80%",
+            "《 ████████████》100%",
+            "𝙸𝙽𝙸𝚃𝙸𝙰𝙻𝙸𝚉𝙴𝙳 𝙲𝙾𝙼𝙿𝙻𝙴𝚃𝙴𝙳 🦄..."
+        ];
+        let { key } = await conn.sendMessage(from, { text: 'ᴜᴘʟᴏᴀᴅɪɴɢ ᴍᴏᴠɪᴇ...' });
+
+        for (const progress of vajiralod) {
+            await conn.sendMessage(from, { text: progress, edit: key });
+        }
+
+        const message = {
+            document: mediaBuffer,
+            caption: "*🎬 TC TEAM MOVIEDL 🎬*",
+            mimetype: `TC MOVIE DL`,
+            fileName: `TC MOVIEDL.${ext}`,
+        };
+
+        await conn.sendMessage(from, message, { quoted: mek });
+        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
+    } catch (error) {
+        console.error('Error fetching or sending', error);
+        await conn.sendMessage(from, { text: '*Error fetching or sending file!*' }, { quoted: mek });
+    }
+};
+
+cmd({
+    pattern: "downloadmp4",
+    react: "📥",
+    dontAddCommandList: true,
+    filename: __filename
+}, downloadHandler('mp4', 'mp4'));
+
+cmd({
+    pattern: "downloadmkv",
+    react: "📥",
+    dontAddCommandList: true,
+    filename: __filename
+}, downloadHandler('mkv', 'mkv'));
+
+cmd({
+    pattern: "downloadzip",
+    react: "📥",
+    dontAddCommandList: true,
+    filename: __filename
+}, downloadHandler('zip', 'zip'));
+
+cmd({
+    pattern: "downloadrar",
+    react: "📥",
+    dontAddCommandList: true,
+    filename: __filename
+}, downloadHandler('rar', 'rar'));
