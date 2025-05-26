@@ -60,36 +60,48 @@ async (conn, m, mek, { from, q, isMe, prefix, reply }) => {
     const detailsApiUrl = `https://cinesubz-info.vercel.app/?url=${encodeURIComponent(q)}&apikey=${config.CINE_API_KEY || 'dinithimegana'}`;
     const detailsRes = await fetchJson(detailsApiUrl);
 
-    // Fetch image from the new API without encoding the URL
-    const imageApiUrl = `https://cinesubz-api-zazie.vercel.app/api/movie?url=${q}`;
-    const imageRes = await fetchJson(imageApiUrl);
+    // Log the full details API response for debugging
+    console.log('Details API response:', JSON.stringify(detailsRes, null, 2));
 
     // Validate details API response
-    if (!detailsRes.data || !detailsRes.dl_links || detailsRes.dl_links.length === 0) {
-      return await conn.sendMessage(from, { text: 'Error: No movie data or download links found!' }, { quoted: mek });
+    if (!detailsRes || !detailsRes.data) {
+      return await reply(`*Error: Invalid response from details API. Please check the URL or try again later.*`);
+    }
+    if (!detailsRes.dl_links || !Array.isArray(detailsRes.dl_links) || detailsRes.dl_links.length === 0) {
+      return await reply(`*Error: No download links found for the provided URL: ${q}*`);
     }
 
-    // Validate image API response and extract image
-    const imageUrl = imageRes.result?.data?.image || detailsRes.data.image; // Fallback to details API image if new API fails
+    // Fetch image from the new API without encoding the URL
+    const imageApiUrl = `https://cinesubz-api-zazie.vercel.app/api/movie?url=${q}`;
+    let imageRes;
+    try {
+      imageRes = await fetchJson(imageApiUrl);
+      console.log('Image API response:', JSON.stringify(imageRes, null, 2));
+    } catch (imageError) {
+      console.error('Image API error:', imageError);
+      imageRes = {}; // Continue with empty response to use fallback
+    }
+
+    // Extract image with fallback to details API
+    const imageUrl = imageRes.result?.data?.image || detailsRes.data?.image || 'https://files.catbox.moe/4fsn8g.jpg'; // Fallback to static image if both APIs fail
     if (!imageUrl) {
-      console.error('No image found in either API response:', { imageRes, detailsRes });
-      return await conn.sendMessage(from, { text: 'Error: No image available for this movie!' }, { quoted: mek });
+      console.warn('No image found in either API response');
     }
 
     // Construct caption with details from the existing API
-    let cap = `*☘️ Title ➜* *${detailsRes.data.title}*\n\n` +
-              `*📆 Release ➜* _${detailsRes.data.date}_\n` +
-              `*⭐ Rating ➜* _${detailsRes.data.imdb}_\n` +
-              `*⏰ Runtime ➜* _${detailsRes.data.runtime}_\n` +
-              `*🌎 Country ➜* _${detailsRes.data.country}_\n` +
-              `*💁‍♂️ Director ➜* _${detailsRes.data.subtitle_author}_\n`;
+    let cap = `*☘️ Title ➜* *${detailsRes.data.title || 'Unknown Title'}*\n\n` +
+              `*📆 Release ➜* _${detailsRes.data.date || 'N/A'}_\n` +
+              `*⭐ Rating ➜* _${detailsRes.data.imdb || 'N/A'}_\n` +
+              `*⏰ Runtime ➜* _${detailsRes.data.runtime || 'N/A'}_\n` +
+              `*🌎 Country ➜* _${detailsRes.data.country || 'N/A'}_\n` +
+              `*💁‍♂️ Director ➜* _${detailsRes.data.subtitle_author || 'N/A'}_\n`;
 
     const sections = [];
 
     if (Array.isArray(detailsRes.dl_links)) {
       const cinesubzRows = detailsRes.dl_links.map(item => ({
-        title: `${item.quality} (${item.size})`,
-        rowId: `${prefix}cinedl ${imageUrl}±${item.link}±${detailsRes.data.title}±${item.quality}`
+        title: `${item.quality || 'Unknown Quality'} (${item.size || 'Unknown Size'})`,
+        rowId: `${prefix}cinedl ${imageUrl}±${item.link}±${detailsRes.data.title || 'Unknown Title'}±${item.quality || 'Unknown Quality'}`
       }));
       sections.push({
         title: "🎬 Cinesubz",
