@@ -42,18 +42,17 @@ const app = express();
 const port = process.env.PORT || 8000;
 //====================================
 async function connectToWA() {
-  console.log("Connecting wa bot 🧬...");
-  const { state, saveCreds } = await useMultiFileAuthState(__dirname + '/auth_info_baileys/');
-  var { version } = await fetchLatestBaileysVersion();
-
+  const { version, isLatest } = await fetchLatestBaileysVersion()
+  console.log(`using WA v${version.join('.')}, isLatest: ${isLatest}`)
+  const { state, saveCreds } = await useMultiFileAuthState(__dirname + '/auth_info_baileys/')
   const conn = makeWASocket({
-    logger: P({ level: 'silent' }),
+    logger: P({ level: "fatal" }).child({ level: "fatal" }),
     printQRInTerminal: false,
-    browser: Browsers.macOS("Firefox"),
-    syncFullHistory: true,
+    generateHighQualityLinkPreview: true,
     auth: state,
-    version
-  });
+    defaultQueryTimeoutMs: undefined,
+    msgRetryCounterCache 
+  })
   
   conn.ev.on('connection.update',async(update) => {
     const { connection, lastDisconnect } = update
