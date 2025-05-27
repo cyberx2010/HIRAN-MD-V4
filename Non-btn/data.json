@@ -1,0 +1,1330 @@
+[
+  {
+    "4C9CE69B6457D0219BBAE25CE3F8FEDF": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtube.com/watch?v=0geqOYqwL0s"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtube.com/watch?v=0geqOYqwL0s"
+      }
+    ]
+  },
+  {
+    "30105CDB526202C237A0AF3BA1E5C2FC": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "4A12B7547C4F44187F0196014C990D88": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "9EF6164622FD487B9F349D8142560DD6": [
+      {
+        "cmdId": "1.1",
+        "cmd": ".dimg https://upload.wikimedia.org/wikipedia/en/d/da/DarkNetflixPosterEnglish.jpg"
+      },
+      {
+        "cmdId": "1.2",
+        "cmd": ".dimg https://m.media-amazon.com/images/M/MV5BOTk2NzUyOTctZDdlMS00MDJlLTgzNTEtNzQzYjFhNjA0YjBjXkEyXkFqcGdeQXVyMjg1NDcxNDE@._V1_.jpg"
+      },
+      {
+        "cmdId": "1.3",
+        "cmd": ".dimg https://imageio.forbes.com/specials-images/imageserve/5f09c45da759d50006fa2945/0x0.jpg?format\\u003djpg\\u0026height\\u003d600\\u0026width\\u003d1200\\u0026fit\\u003dbounds"
+      },
+      {
+        "cmdId": "1.4",
+        "cmd": ".dimg https://m.media-amazon.com/images/I/81oWDX24u+L._UF1000,1000_QL80_.jpg"
+      },
+      {
+        "cmdId": "1.5",
+        "cmd": ".dimg https://m.media-amazon.com/images/M/MV5BNGZkYWUwZTctNGEwNS00YWRiLTkwNzItODJmZDIxYWUxM2VmXkEyXkFqcGdeQWpnYW1i._V1_.jpg"
+      },
+      {
+        "cmdId": "1.6",
+        "cmd": ".dimg https://www.tvguide.com/a/img/resize/16828f77de4baa0d7362ac50681cf1a28afa1e84/hub/2019/06/22/75f2bd40-75ac-425b-9d87-58ee98a10125/dark-news.jpg?auto\\u003dwebp\\u0026fit\\u003dcrop\\u0026height\\u003d1293\\u0026width\\u003d2300"
+      },
+      {
+        "cmdId": "1.7",
+        "cmd": ".dimg https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak\\u003d/v3/t/assets/p14652158_b_h8_az.jpg"
+      },
+      {
+        "cmdId": "1.8",
+        "cmd": ".dimg https://occ-0-2794-2219.1.nflxso.net/dnm/api/v6/9pS1daC2n6UGc3dUogvWIPMR_OU/AAAABdhuMT88XYblZsns_J4s_e76B7jEPFp93Bwc3g4LN9W2Dly9QiRS_vJhYILjnVgXU8qRPhqr5_uW6ie1ECSwNhZABLwKOKGGJafi6q7weJM-2Usl0_NjCCNS.jpg?r\\u003df9c"
+      },
+      {
+        "cmdId": "1.9",
+        "cmd": ".dimg https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id\\u003d100044243898452"
+      },
+      {
+        "cmdId": "1.10",
+        "cmd": ".dimg https://occ-0-2794-2219.1.nflxso.net/dnm/api/v6/9pS1daC2n6UGc3dUogvWIPMR_OU/AAAABadIe75GQILby-MaK9YrLjTxgt7ZXaF88HDdOq049gZY5XOLQoXXnFE6uSNk_vRb9SwYPGonBx5zfnHLYkHTwfU00Vep5R3t0ZI7lS5ppMRPkMk_XKX18ocH.jpg?r\\u003d6c7"
+      },
+      {
+        "cmdId": "1.11",
+        "cmd": ".dimg https://m.media-amazon.com/images/M/MV5BOTk2NzUyOTctZDdlMS00MDJlLTgzNTEtNzQzYjFhNjA0YjBjXkEyXkFqcGdeQXVyMjg1NDcxNDE@._V1_QL75_UX190_CR0,0,190,281_.jpg"
+      },
+      {
+        "cmdId": "1.12",
+        "cmd": ".dimg https://themontclarion.org/wp-content/uploads/2020/08/Photo-2.jpg"
+      },
+      {
+        "cmdId": "1.13",
+        "cmd": ".dimg https://i.redd.it/qvyg2ylp8w751.png"
+      },
+      {
+        "cmdId": "1.14",
+        "cmd": ".dimg https://pics.filmaffinity.com/Dark_TV_Series-147215083-large.jpg"
+      },
+      {
+        "cmdId": "1.15",
+        "cmd": ".dimg https://static01.nyt.com/images/2017/11/24/arts/24dark/24dark3-superJumbo.jpg"
+      },
+      {
+        "cmdId": "1.16",
+        "cmd": ".dimg https://media.istockphoto.com/id/675020930/photo/textured-dark-vignette-black-background.webp?b\\u003d1\\u0026s\\u003d170667a\\u0026w\\u003d0\\u0026k\\u003d20\\u0026c\\u003dnBSWubcuVC-VcrpXgtD4k1eIM_E2edMH9v7oJAqkCWo\\u003d"
+      },
+      {
+        "cmdId": "1.17",
+        "cmd": ".dimg https://img.freepik.com/free-photo/old-black-background-grunge-texture-dark-wallpaper-blackboard-chalkboard-room-wall_1258-28313.jpg"
+      },
+      {
+        "cmdId": "1.18",
+        "cmd": ".dimg https://images.unsplash.com/photo-1504903271097-d7e7c7f5f7ad?q\\u003d80\\u0026w\\u003d1000\\u0026auto\\u003dformat\\u0026fit\\u003dcrop\\u0026ixlib\\u003drb-4.0.3\\u0026ixid\\u003dM3wxMjA3fDB8MHxzZWFyY2h8NHx8ZGFya3xlbnwwfHwwfHx8MA%3D%3D"
+      },
+      {
+        "cmdId": "1.19",
+        "cmd": ".dimg https://images.pexels.com/photos/2823459/pexels-photo-2823459.jpeg?cs\\u003dsrgb\\u0026dl\\u003dpexels-adrien-olichon-2823459.jpg\\u0026fm\\u003djpg"
+      },
+      {
+        "cmdId": "1.20",
+        "cmd": ".dimg https://cdn.pixabay.com/photo/2021/10/23/07/27/forest-6734296_640.jpg"
+      },
+      {
+        "cmdId": "1.21",
+        "cmd": ".dimg https://burst.shopifycdn.com/photos/a-gothic-church-window-spills-light-into-interior-darkness.jpg?width\\u003d1000\\u0026format\\u003dpjpg\\u0026exif\\u003d0\\u0026iptc\\u003d0"
+      },
+      {
+        "cmdId": "1.22",
+        "cmd": ".dimg https://img.freepik.com/free-photo/3d-dark-grunge-display-background-with-smoky-atmosphere_1048-16218.jpg"
+      },
+      {
+        "cmdId": "1.23",
+        "cmd": ".dimg https://images.pexels.com/photos/1480690/pexels-photo-1480690.jpeg?auto\\u003dcompress\\u0026cs\\u003dtinysrgb\\u0026dpr\\u003d1\\u0026w\\u003d500"
+      },
+      {
+        "cmdId": "1.24",
+        "cmd": ".dimg https://www.shutterstock.com/shutterstock/photos/1450341161/display_1500/stock-photo-black-wall-texture-rough-background-dark-concrete-floor-or-old-grunge-background-with-black-1450341161.jpg"
+      },
+      {
+        "cmdId": "1.25",
+        "cmd": ".dimg https://img.freepik.com/free-photo/solid-concrete-wall-textured-backdrop_53876-129493.jpg"
+      },
+      {
+        "cmdId": "1.26",
+        "cmd": ".dimg https://cdn.pixabay.com/photo/2022/10/24/14/48/forest-7543646_640.jpg"
+      },
+      {
+        "cmdId": "1.27",
+        "cmd": ".dimg https://st4.depositphotos.com/13349494/23275/i/450/depositphotos_232750146-stock-photo-dark-blue-striped-wooden-background.jpg"
+      },
+      {
+        "cmdId": "1.28",
+        "cmd": ".dimg https://images.pexels.com/photos/3178786/pexels-photo-3178786.jpeg?cs\\u003dsrgb\\u0026dl\\u003dpexels-andrew-neel-3178786.jpg\\u0026fm\\u003djpg"
+      },
+      {
+        "cmdId": "1.29",
+        "cmd": ".dimg https://static.wikia.nocookie.net/dark-netflix/images/f/fd/Dark_Title_Screen.jpg/revision/latest?cb\\u003d20171111233324"
+      },
+      {
+        "cmdId": "1.30",
+        "cmd": ".dimg https://w0.peakpx.com/wallpaper/122/734/HD-wallpaper-dark-sexy-dark.jpg"
+      },
+      {
+        "cmdId": "1.31",
+        "cmd": ".dimg https://occ-0-2794-2219.1.nflxso.net/dnm/api/v6/9pS1daC2n6UGc3dUogvWIPMR_OU/AAAABdhuMT88XYblZsns_J4s_e76B7jEPFp93Bwc3g4LN9W2Dly9QiRS_vJhYILjnVgXU8qRPhqr5_uW6ie1ECSwNhZABLwKOKGGJafi6q7weJM-2Usl0_NjCCNS.jpg?r\\u003df9c"
+      },
+      {
+        "cmdId": "1.32",
+        "cmd": ".dimg https://wallpapers.com/images/featured/dark-5u7v1sbwoi6hdzsb.jpg"
+      },
+      {
+        "cmdId": "1.33",
+        "cmd": ".dimg https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id\\u003d100063570784457"
+      },
+      {
+        "cmdId": "1.34",
+        "cmd": ".dimg https://oyster.ignimgs.com/mediawiki/apis.ign.com/dark-and-darker/4/40/Dark-and-darker-media_1.jpg"
+      },
+      {
+        "cmdId": "1.35",
+        "cmd": ".dimg https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id\\u003d100044243898452"
+      },
+      {
+        "cmdId": "1.36",
+        "cmd": ".dimg https://images.pexels.com/photos/753994/pexels-photo-753994.jpeg?cs\\u003dsrgb\\u0026dl\\u003dpexels-rakicevic-nenad-753994.jpg\\u0026fm\\u003djpg"
+      },
+      {
+        "cmdId": "1.37",
+        "cmd": ".dimg https://occ-0-2794-2219.1.nflxso.net/dnm/api/v6/9pS1daC2n6UGc3dUogvWIPMR_OU/AAAABadIe75GQILby-MaK9YrLjTxgt7ZXaF88HDdOq049gZY5XOLQoXXnFE6uSNk_vRb9SwYPGonBx5zfnHLYkHTwfU00Vep5R3t0ZI7lS5ppMRPkMk_XKX18ocH.jpg?r\\u003d6c7"
+      },
+      {
+        "cmdId": "1.38",
+        "cmd": ".dimg https://m.media-amazon.com/images/M/MV5BOTk2NzUyOTctZDdlMS00MDJlLTgzNTEtNzQzYjFhNjA0YjBjXkEyXkFqcGdeQXVyMjg1NDcxNDE@._V1_QL75_UX190_CR0,0,190,281_.jpg"
+      },
+      {
+        "cmdId": "1.39",
+        "cmd": ".dimg https://miro.medium.com/v2/resize:fit:1400/0*C__knszvhJ6NCa11"
+      },
+      {
+        "cmdId": "1.40",
+        "cmd": ".dimg https://themontclarion.org/wp-content/uploads/2020/08/Photo-2.jpg"
+      },
+      {
+        "cmdId": "1.41",
+        "cmd": ".dimg https://i.redd.it/qvyg2ylp8w751.png"
+      },
+      {
+        "cmdId": "1.42",
+        "cmd": ".dimg https://st.depositphotos.com/2801445/3334/i/450/depositphotos_33344395-stock-photo-one-night-in-the-mountains.jpg"
+      },
+      {
+        "cmdId": "1.43",
+        "cmd": ".dimg https://lh4.googleusercontent.com/4ShOuhPIrlvADdg1wgEDKdqUypvTbdgOH3ZHOaB6YOGQSUSMNoJZd8I6pCYU5aG_5m0Td3BV8qPmZiD1m5IGuQPVgVhIDAAiTidD-gI1QZMmfivG4Gc6iM5c9MoOVlFK-JfCfe9W"
+      },
+      {
+        "cmdId": "1.44",
+        "cmd": ".dimg https://pics.filmaffinity.com/Dark_TV_Series-147215083-large.jpg"
+      },
+      {
+        "cmdId": "1.45",
+        "cmd": ".dimg https://assets-prd.ignimgs.com/2022/08/11/aloneinthedark-br-1660244744984.jpg"
+      },
+      {
+        "cmdId": "1.46",
+        "cmd": ".dimg https://front.darkanddarker.com/media_8.webp"
+      },
+      {
+        "cmdId": "1.47",
+        "cmd": ".dimg https://cdn5.idcgames.com/storage/image/1438/game_home_bg_section_2/default.jpg"
+      },
+      {
+        "cmdId": "1.48",
+        "cmd": ".dimg https://plus.unsplash.com/premium_photo-1673515243090-649c650982eb?q\\u003d80\\u0026w\\u003d1000\\u0026auto\\u003dformat\\u0026fit\\u003dcrop\\u0026ixlib\\u003drb-4.0.3\\u0026ixid\\u003dM3wxMjA3fDB8MHxzZWFyY2h8MXx8ZGFya3xlbnwwfHwwfHx8MA%3D%3D"
+      },
+      {
+        "cmdId": "1.49",
+        "cmd": ".dimg https://den.mercer.edu/wp-content/uploads/2022/05/pexels-dorran-1643280-1.jpg"
+      },
+      {
+        "cmdId": "1.50",
+        "cmd": ".dimg https://cdn.mos.cms.futurecdn.net/7B9XvAj2dviA8oj9ed9SVm.jpg"
+      },
+      {
+        "cmdId": "1.51",
+        "cmd": ".dimg https://static01.nyt.com/images/2017/11/24/arts/24dark/24dark3-superJumbo.jpg"
+      },
+      {
+        "cmdId": "1.52",
+        "cmd": ".dimg https://wallpapers.com/images/featured/dark-digital-art-3oxcys2965ibywwi.jpg"
+      },
+      {
+        "cmdId": "1.53",
+        "cmd": ".dimg https://i.insider.com/5ef409275af6cc13ef2e1253?width\\u003d1000\\u0026format\\u003djpeg\\u0026auto\\u003dwebp"
+      },
+      {
+        "cmdId": "1.54",
+        "cmd": ".dimg https://images.alphacoders.com/133/1338864.png"
+      },
+      {
+        "cmdId": "1.55",
+        "cmd": ".dimg https://images.pexels.com/photos/1480690/pexels-photo-1480690.jpeg?auto\\u003dcompress\\u0026cs\\u003dtinysrgb\\u0026dpr\\u003d1\\u0026w\\u003d500"
+      },
+      {
+        "cmdId": "1.56",
+        "cmd": ".dimg https://d.newsweek.com/en/full/1140786/9-27-dark-personality.jpg?w\\u003d1600\\u0026h\\u003d1200\\u0026q\\u003d88\\u0026f\\u003d26e75679afbeb2fcbd880d21bd79a758"
+      },
+      {
+        "cmdId": "1.57",
+        "cmd": ".dimg https://www.cnet.com/a/img/resize/c2490bbb1cde48eea74cbc4e75e7601c8e48b773/hub/2022/03/16/074148e2-7660-4e9c-9116-ecbc7b2b3f87/dark.png?auto\\u003dwebp\\u0026fit\\u003dcrop\\u0026height\\u003d675\\u0026width\\u003d1200"
+      },
+      {
+        "cmdId": "1.58",
+        "cmd": ".dimg https://store-images.s-microsoft.com/image/apps.37081.13895334412764328.559da51b-cee3-4463-b8c6-75819f96d69c.f70caa6c-d9dc-4405-9534-e1019eed8e02?q\\u003d90\\u0026w\\u003d480\\u0026h\\u003d270"
+      },
+      {
+        "cmdId": "1.59",
+        "cmd": ".dimg https://www.shutterstock.com/shutterstock/photos/1450341161/display_1500/stock-photo-black-wall-texture-rough-background-dark-concrete-floor-or-old-grunge-background-with-black-1450341161.jpg"
+      },
+      {
+        "cmdId": "1.60",
+        "cmd": ".dimg https://addons-media.operacdn.com/media/CACHE/images/themes/35/186135/1.0-rev1/images/7d37349b-300b-4b06-b212-22be06732efd/47ee0321bdf5ae26085fc5869036c820.jpg"
+      },
+      {
+        "cmdId": "1.61",
+        "cmd": ".dimg https://www.europenowjournal.org/wp-content/uploads/2018/01/dark-netflix-s.jpg"
+      },
+      {
+        "cmdId": "1.62",
+        "cmd": ".dimg https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak\\u003d/v3/t/assets/p14652158_b_h9_az.jpg"
+      },
+      {
+        "cmdId": "1.63",
+        "cmd": ".dimg https://www.tvguide.com/a/img/resize/f207b8870d53e68d3e8295bc2110bbd329ec8b87/hub/2020/06/26/a5208769-930f-45c1-bb01-75650e47b31a/dark-bridge.png?auto\\u003dwebp\\u0026fit\\u003dcrop\\u0026height\\u003d1080\\u0026width\\u003d1920"
+      },
+      {
+        "cmdId": "1.64",
+        "cmd": ".dimg https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id\\u003d3128959417173022"
+      },
+      {
+        "cmdId": "1.65",
+        "cmd": ".dimg https://cultartes.com/wp-content/uploads/2020/09/Dark-Season-3-German-series-is-streaming-online-on-Netflix-with-English-subtitles-release-date-27th-June-1.jpg"
+      },
+      {
+        "cmdId": "1.66",
+        "cmd": ".dimg https://res.cloudinary.com/jerrick/image/upload/d_642250b563292b35f27461a7.png,f_jpg,fl_progressive,q_auto,w_1024/xtcyo6jblfnqv2dlkfnr.jpg"
+      },
+      {
+        "cmdId": "1.67",
+        "cmd": ".dimg https://usa.kaspersky.com/content/en-us/images/repository/isc/2020/deep-web-cover.jpg"
+      },
+      {
+        "cmdId": "1.68",
+        "cmd": ".dimg https://i.ytimg.com/vi/08u8wwHu4N4/sddefault.jpg"
+      },
+      {
+        "cmdId": "1.69",
+        "cmd": ".dimg https://cdn.akamai.steamstatic.com/steam/apps/225360/capsule_616x353.jpg?t\\u003d1660743196"
+      },
+      {
+        "cmdId": "1.70",
+        "cmd": ".dimg https://wallpapers-clan.com/wp-content/uploads/2023/01/mansion-in-the-forest-dark-aesthetic-wallpaper.jpg"
+      },
+      {
+        "cmdId": "1.71",
+        "cmd": ".dimg https://images5.alphacoders.com/133/1331867.jpeg"
+      },
+      {
+        "cmdId": "1.72",
+        "cmd": ".dimg https://images.justwatch.com/poster/309111664/s332/season-2"
+      },
+      {
+        "cmdId": "1.73",
+        "cmd": ".dimg https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Finsternis_Natur.jpg/640px-Finsternis_Natur.jpg"
+      },
+      {
+        "cmdId": "1.74",
+        "cmd": ".dimg https://creativereview.imgix.net/content/uploads/2021/04/DIG10012-DARK.png?auto\\u003dcompress,format\\u0026q\\u003d60\\u0026w\\u003d2048\\u0026h\\u003d1452"
+      },
+      {
+        "cmdId": "1.75",
+        "cmd": ".dimg https://static.standard.co.uk/s3fs-public/thumbnails/image/2020/06/19/15/dark-s3.jpg?width\\u003d1200\\u0026auto\\u003dwebp\\u0026quality\\u003d75"
+      },
+      {
+        "cmdId": "1.76",
+        "cmd": ".dimg https://ghostof82.files.wordpress.com/2022/02/darks1.jpg"
+      },
+      {
+        "cmdId": "1.77",
+        "cmd": ".dimg https://w0.peakpx.com/wallpaper/179/986/HD-wallpaper-dark-background-black-films-illustrator-netflix-phone-series.jpg"
+      },
+      {
+        "cmdId": "1.78",
+        "cmd": ".dimg https://cdn.steamstatic.com/steamcommunity/public/images/items/334070/287f52bb057e180ef7ab972daca0ec46f466803b.jpg"
+      },
+      {
+        "cmdId": "1.79",
+        "cmd": ".dimg https://pyxis.nymag.com/v1/imgs/555/707/903310dcd7da60c8d058092f96d1de2795-dark-.1x.rsocial.w1200.jpg"
+      },
+      {
+        "cmdId": "1.80",
+        "cmd": ".dimg https://assets-global.website-files.com/5f6cc9cd16d59d990c8fca33/62f0568539bc600361616e7b_dark-quotes.jpg"
+      },
+      {
+        "cmdId": "1.81",
+        "cmd": ".dimg https://imageio.forbes.com/specials-images/imageserve/653906f9d4416bba390bc37b/bodies/960x0.png?format\\u003dpng\\u0026width\\u003d960"
+      },
+      {
+        "cmdId": "1.82",
+        "cmd": ".dimg https://storage.googleapis.com/pod_public/1300/150368.jpg"
+      },
+      {
+        "cmdId": "1.83",
+        "cmd": ".dimg https://i.insider.com/5efcd6193ad861318a4ecc64?width\\u003d700"
+      },
+      {
+        "cmdId": "1.84",
+        "cmd": ".dimg https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q\\u003d80\\u0026w\\u003d1000\\u0026auto\\u003dformat\\u0026fit\\u003dcrop\\u0026ixlib\\u003drb-4.0.3\\u0026ixid\\u003dM3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZGFya3xlbnwwfHwwfHx8MA%3D%3D"
+      },
+      {
+        "cmdId": "1.85",
+        "cmd": ".dimg https://deadline.com/wp-content/uploads/2017/12/dark-netflix.jpg"
+      },
+      {
+        "cmdId": "1.86",
+        "cmd": ".dimg https://media.architecturaldigest.com/photos/639b3c0c66bd8911d9987487/master/pass/unnamed.jpg"
+      },
+      {
+        "cmdId": "1.87",
+        "cmd": ".dimg https://storage.googleapis.com/pod_public/1300/144519.jpg"
+      },
+      {
+        "cmdId": "1.88",
+        "cmd": ".dimg https://nezami.org/wp-content/uploads/2020/08/dark-review-arif-nezami.png"
+      },
+      {
+        "cmdId": "1.89",
+        "cmd": ".dimg https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Dark_family_tree_season_2.jpg/1000px-Dark_family_tree_season_2.jpg"
+      },
+      {
+        "cmdId": "1.90",
+        "cmd": ".dimg https://shipcestuous2.files.wordpress.com/2020/07/00-dark-poster-season-1-2-3.jpg"
+      },
+      {
+        "cmdId": "1.91",
+        "cmd": ".dimg https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak\\u003d/v3/t/assets/p14652158_b_v13_ab.jpg"
+      },
+      {
+        "cmdId": "1.92",
+        "cmd": ".dimg https://i.guim.co.uk/img/media/5a8c74da7a52ddab30b49beb6f19f66c9d62fb5d/107_0_3001_1801/master/3001.jpg?width\\u003d1200\\u0026quality\\u003d85\\u0026auto\\u003dformat\\u0026fit\\u003dmax\\u0026s\\u003dc436e69da666c22dc0779e78d48f9bba"
+      },
+      {
+        "cmdId": "1.93",
+        "cmd": ".dimg https://img.freepik.com/free-photo/solid-concrete-wall-textured-backdrop_53876-129493.jpg"
+      },
+      {
+        "cmdId": "1.94",
+        "cmd": ".dimg https://wallpapers.com/images/featured/dark-island-icf8jwv0inun5dwt.jpg"
+      },
+      {
+        "cmdId": "1.95",
+        "cmd": ".dimg https://cdn.pixabay.com/photo/2022/10/24/14/48/forest-7543646_640.jpg"
+      },
+      {
+        "cmdId": "1.96",
+        "cmd": ".dimg https://publisher-ncreg.s3.us-east-2.amazonaws.com/pb-ncregister/swp/hv9hms/media/20200826140852_5f465bbec2bf74d8ccd63756jpeg.jpeg"
+      },
+      {
+        "cmdId": "1.97",
+        "cmd": ".dimg https://i.ytimg.com/vi/849mznBKmIQ/hqdefault.jpg"
+      },
+      {
+        "cmdId": "1.98",
+        "cmd": ".dimg https://st4.depositphotos.com/13349494/23275/i/450/depositphotos_232750146-stock-photo-dark-blue-striped-wooden-background.jpg"
+      },
+      {
+        "cmdId": "1.99",
+        "cmd": ".dimg https://d2rdhxfof4qmbb.cloudfront.net/wp-content/uploads/20200813125652/dark-1.jpg"
+      },
+      {
+        "cmdId": "1.100",
+        "cmd": ".dimg https://image-0.uhdpaper.com/wallpaper/scary-smile-dark-background-4k-wallpaper-uhdpaper.com-543@0@f.jpg"
+      }
+    ]
+  },
+  {
+    "BCF2205FBB8D3057C49401505F01FC44": [
+      {
+        "cmdId": "1",
+        "cmd": ".360p https://youtube.com/watch?v=cLJRDT1mmUk"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".720p https://youtube.com/watch?v=cLJRDT1mmUk"
+      }
+    ]
+  },
+  {
+    "27BEA6B5222DA77BB0CB105AB44F2FCD": [
+      {
+        "cmdId": "1",
+        "cmd": ".menu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "2F5593D8D97117FFCE1D080ABA98289A": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "1CE60BB6E30D9F15F540A12B54FE39A8": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "30970825AEF10AA57ADDE371056811DD": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "1A687239543EBDB433BDB0CD7630F7AF": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "51CD1BAC4C23B40587A499ABD4948B79": [
+      {
+        "cmdId": "1.1",
+        "cmd": ".dapk2 https://androidapksfree.com/gb-whatsapp/com-gbwhatsapp/+GBWhatsApp APK (v17.60 January 2024) – Download"
+      },
+      {
+        "cmdId": "1.2",
+        "cmd": ".dapk2 https://androidapksfree.com/whatsapp-messenger/com-whatsapp/+WhatsApp Messenger 2.24.3.14 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.3",
+        "cmd": ".dapk2 https://androidapksfree.com/android-app/com-androidapksfree/+AndroidAPKsFree App Store 4.0.34 APK – Download"
+      },
+      {
+        "cmdId": "1.4",
+        "cmd": ".dapk2 https://androidapksfree.com/google-play-services/com-google-android-gms/+Google Play Services 23.48.15 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.5",
+        "cmd": ".dapk2 https://androidapksfree.com/shareit/com-lenovo-anyshare-gps/+SHAREit 6.35.9_AM APK for Android – Download"
+      },
+      {
+        "cmdId": "1.6",
+        "cmd": ".dapk2 https://androidapksfree.com/facebook-messenger/com-facebook-orca/+Facebook Messenger 441.0.0.23.113 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.7",
+        "cmd": ".dapk2 https://androidapksfree.com/instagram/com-instagram-android/+Instagram 315.0.0.29.109 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.8",
+        "cmd": ".dapk2 https://androidapksfree.com/google-camera/com-google-android-googlecamera/+Google Camera 8.8.224.520435764.11 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.9",
+        "cmd": ".dapk2 https://androidapksfree.com/teen-patti-gold/com-teenpatti-hd-gold/+Teen Patti Gold 7.93 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.10",
+        "cmd": ".dapk2 https://androidapksfree.com/telegram/org-telegram-messenger/+Telegram 10.6.2 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.11",
+        "cmd": ".dapk2 https://androidapksfree.com/xender/cn-xender/+Xender 13.2.3 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.12",
+        "cmd": ".dapk2 https://androidapksfree.com/apex-launcher/com-anddoes-launcher/+Apex Launcher 4.9.36 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.13",
+        "cmd": ".dapk2 https://androidapksfree.com/whatsapp-plus/com-whatsapp-p/+WhatsApp Plus 2.23.23.78 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.14",
+        "cmd": ".dapk2 https://androidapksfree.com/mx-player/mxplayer/+MX Player 1.76.4 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.15",
+        "cmd": ".dapk2 https://androidapksfree.com/textnow-free-text-calls/com-enflick-android-textnow/+TextNow – free text + calls 23.45.0.1 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.16",
+        "cmd": ".dapk2 https://androidapksfree.com/og-insta/com-oginstagram-android/+OGInsta+ 10.14.0 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.17",
+        "cmd": ".dapk2 https://androidapksfree.com/viber/com-viber-voip/+Viber 21.2.1.0 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.18",
+        "cmd": ".dapk2 https://androidapksfree.com/shazam/com-shazam-android/+Shazam 14.1.0 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.19",
+        "cmd": ".dapk2 https://androidapksfree.com/imo-video-calls-and-chat/com-imo-android-imoim/+imo 2024.01.1051 APK for Android – Download"
+      },
+      {
+        "cmdId": "1.20",
+        "cmd": ".dapk2 https://androidapksfree.com/skype-app/com-skype-raider/+Skype 8.110.0.218 APK for Android – Download"
+      }
+    ]
+  },
+  {
+    "EB0FE6E35AC9EC0927B07A1CDBF3DEE5": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtube.com/watch?v=RlS3c1rhLUM"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtube.com/watch?v=RlS3c1rhLUM"
+      }
+    ]
+  },
+  {
+    "93C5DC0D0D9D18A163E1476D45DF2C61": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtube.com/watch?v=ngP_JyAkWAU"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtube.com/watch?v=ngP_JyAkWAU"
+      }
+    ]
+  },
+  {
+    "EB616764174413A953AC8850DE222F1A": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtube.com/watch?v=Ebm18yIQlmI"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtube.com/watch?v=Ebm18yIQlmI"
+      }
+    ]
+  },
+  {
+    "219C0932EFF9E6E35E9CBB4CF608D70F": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "5EB18E95F9EA40697DE0C6268A828437": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "C4646897342268CF633DBE4CC8DBFBB3": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "8C250887606FE404C8BE34278A10DBAA": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "251E9D033877FE7CBB352E42A26B1CAE": [
+      {
+        "cmdId": "1",
+        "cmd": ".ssd 6624.jpg"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ssi 6624.jpg"
+      }
+    ]
+  },
+  {
+    "89CE9844B1F651F11625759A5376E5E2": [
+      {
+        "cmdId": "1",
+        "cmd": ".ssd 7679.jpg"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ssi 7679.jpg"
+      }
+    ]
+  },
+  {
+    "B23860E285E4BE1EBE0D808416883655": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "CBACC6EC1961A20F1DC17E0386790128": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtube.com/watch?v=v43tCpxdRnM"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtube.com/watch?v=v43tCpxdRnM"
+      }
+    ]
+  },
+  {
+    "E331B8C7613EDB97E5D05F2F41E493FE": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "7FD905EC7EBC21FCBA39BE491BCAE4FB": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "8AF219B36702DD55764F319862751E7A": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "C674F7361E218494C5BA9417677E4C7F": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "7DBEB9A3E3BF3682D502F368DC6963C1": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "8ADF9D86FCF54C13917E50EE77413404": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtu.be/v43tCpxdRnM?si=VRSD18j6QusnshGJ"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtu.be/v43tCpxdRnM?si=VRSD18j6QusnshGJ"
+      }
+    ]
+  },
+  {
+    "ABF146C7D416DD3D69D785AFF0385F81": [
+      {
+        "cmdId": "1",
+        "cmd": ".menu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "552B5EB276FCD1479C25B49133C439D4": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "07BD060757B5B943541D1FB18928520A": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "EFFCF13309BCDC7F7ED75E80F09903AF": [
+      {
+        "cmdId": "1.1",
+        "cmd": ".dapk com.ballrungame.ballgamesmusic"
+      },
+      {
+        "cmdId": "1.2",
+        "cmd": ".dapk videodownloader.fbvideodownloader.facebookvideodownloader.videodownloaderforfacebook"
+      },
+      {
+        "cmdId": "1.3",
+        "cmd": ".dapk de.smuttlewerk.fleetbattle"
+      },
+      {
+        "cmdId": "1.4",
+        "cmd": ".dapk com.arsydev.fbdownloader"
+      },
+      {
+        "cmdId": "1.5",
+        "cmd": ".dapk com.astroswipe.flyingballflyinggames"
+      },
+      {
+        "cmdId": "1.6",
+        "cmd": ".dapk com.apps.fbdownloader"
+      },
+      {
+        "cmdId": "1.7",
+        "cmd": ".dapk com.kholifa.fbv"
+      },
+      {
+        "cmdId": "1.8",
+        "cmd": ".dapk net.ezmar.facelite"
+      },
+      {
+        "cmdId": "1.9",
+        "cmd": ".dapk com.verox.fbdownloader"
+      },
+      {
+        "cmdId": "1.10",
+        "cmd": ".dapk com.ZalmiApps.Videodownloaderhd"
+      },
+      {
+        "cmdId": "1.11",
+        "cmd": ".dapk com.daystrom.fbattery"
+      },
+      {
+        "cmdId": "1.12",
+        "cmd": ".dapk com.emindemiri.fbpasswordhack"
+      },
+      {
+        "cmdId": "1.13",
+        "cmd": ".dapk jmkmobileapps.facebooktricks"
+      },
+      {
+        "cmdId": "1.14",
+        "cmd": ".dapk com.websmeet.fbpasswordhack"
+      },
+      {
+        "cmdId": "1.15",
+        "cmd": ".dapk org.mikebannion.fbnotificationsFree"
+      },
+      {
+        "cmdId": "1.16",
+        "cmd": ".dapk com.devcod3r.fbcommentsimgen"
+      },
+      {
+        "cmdId": "1.17",
+        "cmd": ".dapk com.pix.fort.war.battleground.shooting.game"
+      },
+      {
+        "cmdId": "1.18",
+        "cmd": ".dapk com.yegestudio.socialcon"
+      },
+      {
+        "cmdId": "1.19",
+        "cmd": ".dapk com.get.fbvideo"
+      },
+      {
+        "cmdId": "1.20",
+        "cmd": ".dapk com.IAD.fb_video_downloader"
+      },
+      {
+        "cmdId": "1.21",
+        "cmd": ".dapk downloader.video.insta.fb.fastvideodownloader"
+      },
+      {
+        "cmdId": "1.22",
+        "cmd": ".dapk com.app9.facebookdl"
+      },
+      {
+        "cmdId": "1.23",
+        "cmd": ".dapk com.lambda_apps.insta_fb_vid_pro"
+      },
+      {
+        "cmdId": "1.24",
+        "cmd": ".dapk com.allvideodownloader.videodownload.videodownloader"
+      }
+    ]
+  },
+  {
+    "B057097D2AA85D4CB9907EB00BA4F870": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "60C8D66785929C894795F0BB630B5BEB": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtube.com/watch?v=5_UdAZi9pFU"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtube.com/watch?v=5_UdAZi9pFU"
+      }
+    ]
+  },
+  {
+    "25D4F87430AE744D16E1D4DED5F62EC5": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtube.com/watch?v=0ph1dc9Brmo"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtube.com/watch?v=0ph1dc9Brmo"
+      }
+    ]
+  },
+  {
+    "136D71D4C2984626B4B487F4AC084A4D": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "A31AC41C3696F631F18C009AF2204115": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "0BEA82818334EE30183B1C0A3B391B2F": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  },
+  {
+    "1F919F7D007B05834C646B51869D0CD6": [
+      {
+        "cmdId": "1",
+        "cmd": ".sc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ping"
+      }
+    ]
+  },
+  {
+    "D39023CED437B6FC8E6CE484A3A0C0C4": [
+      {
+        "cmdId": "1.1",
+        "cmd": ".dapk com.whatsapp"
+      },
+      {
+        "cmdId": "1.2",
+        "cmd": ".dapk com.sas.statussaverapp"
+      },
+      {
+        "cmdId": "1.3",
+        "cmd": ".dapk com.sas.whatswebpro"
+      },
+      {
+        "cmdId": "1.4",
+        "cmd": ".dapk com.callapp.contacts"
+      },
+      {
+        "cmdId": "1.5",
+        "cmd": ".dapk com.verox.whatsappdirect"
+      },
+      {
+        "cmdId": "1.6",
+        "cmd": ".dapk net.oz.team.chat.lives"
+      },
+      {
+        "cmdId": "1.7",
+        "cmd": ".dapk com.whatsapp.w4b"
+      },
+      {
+        "cmdId": "1.8",
+        "cmd": ".dapk polis.app.callrecorder"
+      },
+      {
+        "cmdId": "1.9",
+        "cmd": ".dapk catch_.me_.if_.you_.can_"
+      },
+      {
+        "cmdId": "1.10",
+        "cmd": ".dapk com.nabiltitou.whatshide"
+      },
+      {
+        "cmdId": "1.11",
+        "cmd": ".dapk tonos.ringtones.whatsapp"
+      },
+      {
+        "cmdId": "1.12",
+        "cmd": ".dapk com.jasmin_video.live_chat"
+      },
+      {
+        "cmdId": "1.13",
+        "cmd": ".dapk com.chatautoreplyplus"
+      },
+      {
+        "cmdId": "1.14",
+        "cmd": ".dapk io.makeroid.soumik2001_SM.WhatsAppCleanr"
+      },
+      {
+        "cmdId": "1.15",
+        "cmd": ".dapk com.soon.whatapp"
+      },
+      {
+        "cmdId": "1.16",
+        "cmd": ".dapk com.wastickers.wastickerapps"
+      },
+      {
+        "cmdId": "1.17",
+        "cmd": ".dapk com.whatsapp.wallpaper"
+      },
+      {
+        "cmdId": "1.18",
+        "cmd": ".dapk com.edwinnmd.schatwhatsapp"
+      },
+      {
+        "cmdId": "1.19",
+        "cmd": ".dapk com.curiosidades.whatsapp"
+      },
+      {
+        "cmdId": "1.20",
+        "cmd": ".dapk com.eightsoft.wallpaperwhatsappgradients"
+      },
+      {
+        "cmdId": "1.21",
+        "cmd": ".dapk com.elite.whatsapppro"
+      },
+      {
+        "cmdId": "1.22",
+        "cmd": ".dapk com.didi.createstickers"
+      },
+      {
+        "cmdId": "1.23",
+        "cmd": ".dapk and.p2l"
+      },
+      {
+        "cmdId": "1.24",
+        "cmd": ".dapk com.videos.de.risa.para.whatsapp"
+      },
+      {
+        "cmdId": "1.25",
+        "cmd": ".dapk com.wkapp.fondospantalla"
+      },
+      {
+        "cmdId": "1.26",
+        "cmd": ".dapk com.wkapp.tonosnotificaciones"
+      },
+      {
+        "cmdId": "1.27",
+        "cmd": ".dapk name.kunes.android.launcher.demo"
+      },
+      {
+        "cmdId": "1.28",
+        "cmd": ".dapk com.elite.whatsapp"
+      },
+      {
+        "cmdId": "1.29",
+        "cmd": ".dapk com.javiersantos.whatsappbetaupdater"
+      },
+      {
+        "cmdId": "1.30",
+        "cmd": ".dapk com.kingstellw.a"
+      },
+      {
+        "cmdId": "1.31",
+        "cmd": ".dapk name.kunes.android.launcher.bigphone"
+      }
+    ]
+  },
+  {
+    "4CD0C21E449CD5C7BE9BEED4439082D7": [
+      {
+        "cmdId": "1",
+        "cmd": ".ytdoc https://youtube.com/watch?v=PofCAfa-ZYc"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".ytmp3 https://youtube.com/watch?v=PofCAfa-ZYc"
+      }
+    ]
+  },
+  {
+    "90F1FE4FCFB01ED257F97A340B0B3928": [
+      {
+        "cmdId": "1",
+        "cmd": ".downmenu"
+      },
+      {
+        "cmdId": "2",
+        "cmd": ".searchmenu"
+      },
+      {
+        "cmdId": "3",
+        "cmd": ".othermenu"
+      },
+      {
+        "cmdId": "4",
+        "cmd": ".ownermenu"
+      },
+      {
+        "cmdId": "5",
+        "cmd": ".adminmenu"
+      }
+    ]
+  }
+]
